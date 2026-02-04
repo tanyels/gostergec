@@ -1,24 +1,36 @@
 import { LiveTicker } from '@/components/ui/LiveTicker'
-import { FeatureHub } from '@/components/home/FeatureHub'
-import { QuickStats } from '@/components/home/QuickStats'
-import { HeroSection } from '@/components/home/HeroSection'
+import { QuickCalculator } from '@/components/ui/QuickCalculator'
+import { FundHighlights } from '@/components/ui/FundHighlights'
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
-      {/* Live Ticker */}
-      <div className="container mx-auto px-4 pt-6">
-        <LiveTicker />
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      {/* Live Ticker - USD, EUR, Gold prices */}
+      <LiveTicker />
 
       {/* Hero Section */}
-      <HeroSection />
+      <section className="text-center py-12">
+        <h1 className="text-4xl font-bold text-slate-800 mb-4">
+          Fonunuz Gerçekten Kazandırıyor mu?
+        </h1>
+        <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+          TL bazlı getiriler yanıltıcı olabilir. Yatırımınızın USD, EUR ve altın
+          karşısındaki gerçek performansını görün.
+        </p>
+        <p className="text-lg text-slate-500 mt-2">
+          Is your fund really profitable? See real returns against USD, EUR, and gold.
+        </p>
+      </section>
 
-      {/* Quick Stats */}
-      <QuickStats />
+      {/* Quick Calculator */}
+      <section className="py-8">
+        <QuickCalculator />
+      </section>
 
-      {/* Feature Hub - All Tools Compartmentalized */}
-      <FeatureHub />
+      {/* Fund Highlights - Top performers / worst performers */}
+      <section className="py-8">
+        <FundHighlights />
+      </section>
     </div>
   )
 }
