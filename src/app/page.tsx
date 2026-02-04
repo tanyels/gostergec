@@ -1,5 +1,5 @@
 import { LiveTicker } from '@/components/ui/LiveTicker'
-import { QuickCalculator } from '@/components/ui/QuickCalculator'
+import { HeroVisual } from '@/components/ui/HeroVisual'
 import { FundHighlights } from '@/components/ui/FundHighlights'
 
 export default function Home() {
@@ -8,24 +8,8 @@ export default function Home() {
       {/* Live Ticker - USD, EUR, Gold prices */}
       <LiveTicker />
 
-      {/* Hero Section */}
-      <section className="text-center py-12">
-        <h1 className="text-4xl font-bold text-slate-800 mb-4">
-          Fonunuz Gerçekten Kazandırıyor mu?
-        </h1>
-        <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-          TL bazlı getiriler yanıltıcı olabilir. Yatırımınızın USD, EUR ve altın
-          karşısındaki gerçek performansını görün.
-        </p>
-        <p className="text-lg text-slate-500 mt-2">
-          Is your fund really profitable? See real returns against USD, EUR, and gold.
-        </p>
-      </section>
-
-      {/* Quick Calculator */}
-      <section className="py-8">
-        <QuickCalculator />
-      </section>
+      {/* Hero Visual - Yanılsama vs Gerçek + Gerçek Sonuç */}
+      <HeroVisual />
 
       {/* Fund Highlights - Top performers / worst performers */}
       <section className="py-8">
