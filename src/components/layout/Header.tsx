@@ -16,7 +16,7 @@ export function Header() {
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-6">
             <Link
               href="/funds"
               className="text-slate-600 hover:text-slate-900 font-medium transition"
@@ -34,6 +34,12 @@ export function Header() {
               className="text-slate-600 hover:text-slate-900 font-medium transition"
             >
               {lang === 'tr' ? 'Sıralama' : 'Leaderboard'}
+            </Link>
+            <Link
+              href="/bes"
+              className="text-amber-600 hover:text-amber-700 font-semibold transition"
+            >
+              {lang === 'tr' ? 'BES Analizi' : 'Pension Funds'}
             </Link>
           </nav>
 
