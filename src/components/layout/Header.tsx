@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 export function Header() {
   const [lang, setLang] = useState<'tr' | 'en'>('tr')
+  const [moreOpen, setMoreOpen] = useState(false)
 
   return (
     <header className="border-b border-slate-200 bg-white shadow-sm">
@@ -16,12 +17,12 @@ export function Header() {
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-5">
             <Link
               href="/funds"
               className="text-slate-600 hover:text-slate-900 font-medium transition"
             >
-              {lang === 'tr' ? 'Fon Analizi' : 'Fund Analysis'}
+              {lang === 'tr' ? 'Analiz' : 'Analysis'}
             </Link>
             <Link
               href="/compare"
@@ -33,14 +34,59 @@ export function Header() {
               href="/leaderboard"
               className="text-slate-600 hover:text-slate-900 font-medium transition"
             >
-              {lang === 'tr' ? 'Sıralama' : 'Leaderboard'}
+              {lang === 'tr' ? 'Sıralama' : 'Rankings'}
+            </Link>
+            <Link
+              href="/report-cards"
+              className="text-slate-600 hover:text-slate-900 font-medium transition"
+            >
+              {lang === 'tr' ? 'Karneler' : 'Grades'}
             </Link>
             <Link
               href="/bes"
               className="text-amber-600 hover:text-amber-700 font-semibold transition"
             >
-              {lang === 'tr' ? 'BES Analizi' : 'Pension Funds'}
+              BES
             </Link>
+
+            {/* More Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setMoreOpen(!moreOpen)}
+                className="text-slate-600 hover:text-slate-900 font-medium transition flex items-center gap-1"
+              >
+                {lang === 'tr' ? 'Daha Fazla' : 'More'}
+                <svg className={`w-4 h-4 transition ${moreOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {moreOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg py-2 z-50">
+                  <Link
+                    href="/heatmap"
+                    className="block px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    {lang === 'tr' ? '🗺️ Sektör Haritası' : '🗺️ Sector Heatmap'}
+                  </Link>
+                  <Link
+                    href="/crypto"
+                    className="block px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    {lang === 'tr' ? '₿ Kripto Karşılaştır' : '₿ Crypto Compare'}
+                  </Link>
+                  <Link
+                    href="/real-estate"
+                    className="block px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    {lang === 'tr' ? '🏠 Gayrimenkul' : '🏠 Real Estate'}
+                  </Link>
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Language Toggle */}
