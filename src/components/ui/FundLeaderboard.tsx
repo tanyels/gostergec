@@ -16,7 +16,6 @@ interface FundRanking {
   goldReturn: number
 }
 
-// Placeholder data - will come from Supabase
 const PLACEHOLDER_RANKINGS: FundRanking[] = [
   { rank: 1, code: 'TYH', name: 'Yapı Kredi Altın Fonu', category: 'Altın', tryReturn: 145, usdReturn: 32, eurReturn: 28, goldReturn: 2 },
   { rank: 2, code: 'IPB', name: 'İş Portföy BIST Banka', category: 'Hisse', tryReturn: 210, usdReturn: 28, eurReturn: 24, goldReturn: -8 },
@@ -43,15 +42,15 @@ export function FundLeaderboard() {
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center">
         {/* Period */}
-        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+        <div className="flex rounded-lg border border-slate-300 overflow-hidden">
           {(['1Y', '3Y', '5Y', '10Y'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-4 py-2 text-sm ${
+              className={`px-4 py-2 text-sm font-medium ${
                 period === p
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  ? 'bg-slate-800 text-white'
+                  : 'bg-white text-slate-600 hover:bg-slate-100'
               }`}
             >
               {p}
@@ -63,7 +62,7 @@ export function FundLeaderboard() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortBy)}
-          className="border border-gray-300 rounded-lg px-3 py-2"
+          className="border border-slate-300 rounded-lg px-3 py-2 text-slate-700 bg-white font-medium"
         >
           <option value="usd">USD Getirisi</option>
           <option value="eur">EUR Getirisi</option>
@@ -75,7 +74,7 @@ export function FundLeaderboard() {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2"
+          className="border border-slate-300 rounded-lg px-3 py-2 text-slate-700 bg-white font-medium"
         >
           <option value="all">Tüm Kategoriler</option>
           <option value="hisse">Hisse Fonları</option>
@@ -87,37 +86,37 @@ export function FundLeaderboard() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">#</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Fon</th>
-              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Kategori</th>
-              <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">TL</th>
-              <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600 bg-gray-100">USD</th>
-              <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">EUR</th>
-              <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Altın</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-slate-600">#</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-slate-600">Fon</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-slate-600">Kategori</th>
+              <th className="text-right px-4 py-3 text-sm font-semibold text-slate-600">TL</th>
+              <th className="text-right px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100">USD</th>
+              <th className="text-right px-4 py-3 text-sm font-semibold text-slate-600">EUR</th>
+              <th className="text-right px-4 py-3 text-sm font-semibold text-slate-600">Altın</th>
             </tr>
           </thead>
           <tbody>
             {sortedFunds.map((fund, i) => (
               <tr
                 key={fund.code}
-                className="border-b border-gray-100 hover:bg-gray-50"
+                className="border-b border-slate-100 hover:bg-slate-50"
               >
-                <td className="px-4 py-3 text-gray-500 font-medium">{i + 1}</td>
+                <td className="px-4 py-3 text-slate-500 font-semibold">{i + 1}</td>
                 <td className="px-4 py-3">
                   <div>
-                    <p className="font-medium">{fund.name}</p>
-                    <p className="text-sm text-gray-500">{fund.code}</p>
+                    <p className="font-semibold text-slate-800">{fund.name}</p>
+                    <p className="text-sm text-slate-500">{fund.code}</p>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{fund.category}</td>
+                <td className="px-4 py-3 text-sm text-slate-600 font-medium">{fund.category}</td>
                 <td className="px-4 py-3 text-right">
                   <ReturnValue value={fund.tryReturn} />
                 </td>
-                <td className="px-4 py-3 text-right bg-gray-50">
+                <td className="px-4 py-3 text-right bg-slate-50">
                   <ReturnValue value={fund.usdReturn} highlight />
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -133,7 +132,7 @@ export function FundLeaderboard() {
       </div>
 
       {/* Legend */}
-      <p className="text-sm text-gray-500 text-center">
+      <p className="text-sm text-slate-500 text-center">
         Getiriler {period} dönemi için hesaplanmıştır. USD kolonu gerçek (enflasyondan arındırılmış) getiriyi gösterir.
       </p>
     </div>

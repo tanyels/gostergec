@@ -27,9 +27,9 @@ export function LiveTicker() {
 
   if (loading) {
     return (
-      <div className="bg-gray-900 text-white py-3 px-4 rounded-lg">
+      <div className="bg-slate-800 text-white py-3 px-4 rounded-lg">
         <div className="flex justify-center space-x-8">
-          <span className="animate-pulse">Loading rates...</span>
+          <span className="animate-pulse text-slate-300">Loading rates...</span>
         </div>
       </div>
     )
@@ -40,8 +40,8 @@ export function LiveTicker() {
   }
 
   return (
-    <div className="bg-gray-900 text-white py-3 px-4 rounded-lg">
-      <div className="flex justify-center space-x-8 text-sm md:text-base">
+    <div className="bg-slate-800 text-white py-3 px-4 rounded-lg shadow-md">
+      <div className="flex justify-center flex-wrap gap-6 text-sm md:text-base">
         <TickerItem label="USD/TRY" value={rates.usdTry} />
         <TickerItem label="EUR/TRY" value={rates.eurTry} />
         <TickerItem label="Altın/g" value={rates.goldTry} suffix=" ₺" />
@@ -64,8 +64,8 @@ function TickerItem({
 }) {
   return (
     <div className="flex items-center space-x-2">
-      <span className="text-gray-400">{label}</span>
-      <span className="font-semibold text-gold-500">
+      <span className="text-slate-400 font-medium">{label}</span>
+      <span className="font-bold text-gold-400">
         {prefix}{value.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}{suffix}
       </span>
     </div>

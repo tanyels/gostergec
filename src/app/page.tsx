@@ -10,14 +10,14 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="text-center py-12">
-        <h1 className="text-4xl font-bold mb-4">
+        <h1 className="text-4xl font-bold text-slate-800 mb-4">
           Fonunuz Gerçekten Kazandırıyor mu?
         </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <p className="text-xl text-slate-600 max-w-2xl mx-auto">
           TL bazlı getiriler yanıltıcı olabilir. Yatırımınızın USD, EUR ve altın
           karşısındaki gerçek performansını görün.
         </p>
-        <p className="text-lg text-gray-500 mt-2">
+        <p className="text-lg text-slate-500 mt-2">
           Is your fund really profitable? See real returns against USD, EUR, and gold.
         </p>
       </section>

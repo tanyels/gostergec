@@ -17,7 +17,7 @@ export function FundAnalyzer() {
         <select
           value={selectedFund}
           onChange={(e) => setSelectedFund(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2 min-w-[250px]"
+          className="border border-slate-300 rounded-lg px-4 py-2 min-w-[250px] text-slate-700 bg-white font-medium focus:ring-2 focus:ring-slate-400"
         >
           <option value="">Fon seçin / Select fund...</option>
           {FUNDS.map((f) => (
@@ -27,15 +27,15 @@ export function FundAnalyzer() {
           ))}
         </select>
 
-        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+        <div className="flex rounded-lg border border-slate-300 overflow-hidden">
           {(['1Y', '3Y', '5Y', '10Y'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-4 py-2 text-sm ${
+              className={`px-4 py-2 text-sm font-medium ${
                 period === p
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  ? 'bg-slate-800 text-white'
+                  : 'bg-white text-slate-600 hover:bg-slate-100'
               }`}
             >
               {p}
@@ -46,14 +46,14 @@ export function FundAnalyzer() {
 
       {/* Fund Info */}
       {fund && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-2xl font-bold">{fund.name}</h2>
-              <p className="text-gray-500">{fund.code} · {fund.category}</p>
+              <h2 className="text-2xl font-bold text-slate-800">{fund.name}</h2>
+              <p className="text-slate-500 font-medium">{fund.code} · {fund.category}</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500">Son {period}</p>
+              <p className="text-sm text-slate-500 font-medium">Son {period}</p>
             </div>
           </div>
 
@@ -83,7 +83,7 @@ export function FundAnalyzer() {
       )}
 
       {!fund && (
-        <div className="text-center py-16 text-gray-500">
+        <div className="text-center py-16 text-slate-500 font-medium">
           Analiz için bir fon seçin / Select a fund to analyze
         </div>
       )}
@@ -105,12 +105,12 @@ function ReturnCard({
   const isPositive = value >= 0
 
   return (
-    <div className={`p-4 rounded-lg ${highlight ? 'bg-gray-100 ring-2 ring-gray-900' : 'bg-gray-50'}`}>
-      <p className="text-sm text-gray-600">{label}</p>
+    <div className={`p-4 rounded-lg ${highlight ? 'bg-slate-100 ring-2 ring-slate-300' : 'bg-slate-50'}`}>
+      <p className="text-sm font-medium text-slate-600">{label}</p>
       <p className={`text-2xl font-bold ${isPositive ? 'text-profit' : 'text-loss'}`}>
         {isPositive ? '+' : ''}{value.toFixed(1)}%
       </p>
-      <p className="text-xs text-gray-500">{sublabel}</p>
+      <p className="text-xs text-slate-500 font-medium">{sublabel}</p>
     </div>
   )
 }
