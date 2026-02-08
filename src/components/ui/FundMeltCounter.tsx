@@ -138,12 +138,12 @@ export function FundMeltCounter({
       <p className="text-xs text-slate-500 mb-6">{subtitle}</p>
 
       <p className="text-sm text-slate-600 mb-4 font-medium">
-        {startTL.toLocaleString('tr-TR')} ₺ yatırsaydınız...
+        Tam 1 yıl önce {startTL.toLocaleString('tr-TR')} ₺ yatırsaydınız...
       </p>
 
-      {/* TL Counter */}
+      {/* TL Counter — what the fund shows */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-3">
-        <p className="text-sm font-medium text-emerald-700 mb-1">TL Değeri</p>
+        <p className="text-sm font-medium text-emerald-700 mb-1">Fona yatırdınız, bugün elinizde:</p>
         <span
           ref={tlRef}
           className="text-3xl font-bold text-emerald-600"
@@ -159,9 +159,9 @@ export function FundMeltCounter({
       </div>
 
       {/* VS divider */}
-      <p className="text-center text-slate-400 font-bold text-sm my-1">vs</p>
+      <p className="text-center text-slate-400 font-bold text-sm my-1">ama</p>
 
-      {/* USD Counter */}
+      {/* USD Counter — the reality */}
       <div
         className={`border rounded-lg p-4 mt-3 transition-shadow duration-700 ${
           isUSDPositive
@@ -170,7 +170,10 @@ export function FundMeltCounter({
         }`}
       >
         <p className={`text-sm font-medium mb-1 ${isUSDPositive ? 'text-emerald-700' : 'text-red-700'}`}>
-          USD Karşılığı
+          Yatırım yapmayıp dolar tutsaydınız:
+        </p>
+        <p className="text-xs text-slate-400 mb-2">
+          1 yıl önce {startTL.toLocaleString('tr-TR')} ₺ = {formatUSD(startUSD)} idi
         </p>
         <span
           ref={usdRef}
@@ -179,10 +182,13 @@ export function FundMeltCounter({
           {formatUSD(isVisible ? startUSD : endUSD)}
         </span>
         <p
-          className={`text-sm mt-1 font-medium transition-opacity duration-500 ${isUSDPositive ? 'text-emerald-500' : 'text-red-500'}`}
-          style={{ opacity: isDone ? 1 : 0 }}
+          className={`text-xs mt-2 ${isUSDPositive ? 'text-emerald-600' : 'text-red-600'}`}
+          style={{ opacity: isDone ? 1 : 0, transition: 'opacity 0.5s' }}
         >
-          {formatReturnLabel(usdReturn)}
+          {isUSDPositive
+            ? `Fonunuz dolar bazında da kazandırmış (${formatReturnLabel(usdReturn)})`
+            : `Fonunuza yatırdığınız para bugün sadece ${formatUSD(endUSD)} ediyor (${formatReturnLabel(usdReturn)})`
+          }
         </p>
       </div>
 
