@@ -130,108 +130,48 @@ export function FundMeltCounter({
         </p>
       </div>
 
-      {/* "Peki fon ne getirmiş?" */}
-      <p
-        className="text-sm font-semibold text-slate-700 mb-3 transition-all duration-500"
+      {/* Current value */}
+      <div
+        className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 transition-all duration-500"
         style={{
           opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
           transitionDelay: '0.1s',
         }}
       >
-        Peki aldığınız fon ne getirmiş?
-      </p>
-
-      {/* Result rows */}
-      <div className="space-y-2">
-        {/* TL */}
-        <ResultRow
-          icon="₺"
-          label="TL olarak"
-          value={fmtTL(endTL)}
-          diff={fmtDiff(tlProfit, fmtTL)}
-          pct={tlReturn}
-          positive={tlProfit >= 0}
-          isVisible={isVisible}
-          delay={0.15}
-        />
-        {/* USD */}
-        <ResultRow
-          icon="$"
-          label="Dolar olarak"
-          value={fmtUSD(endUSD)}
-          diff={fmtDiff(usdProfit, fmtUSD)}
-          pct={usdReturn}
-          positive={usdProfit >= 0}
-          isVisible={isVisible}
-          delay={0.25}
-        />
-        {/* Gold */}
-        <ResultRow
-          icon="Au"
-          label="Altın olarak"
-          value={fmtGold(endGold)}
-          diff={fmtDiff(goldProfit, fmtGold)}
-          pct={goldReturn}
-          positive={goldProfit >= 0}
-          isVisible={isVisible}
-          delay={0.35}
-        />
+        <p className="text-sm text-slate-600">
+          Bugün fonunuz TL olarak <span className="font-bold text-slate-800">{fmtTL(endTL)}</span>,
+          altın olarak <span className="font-bold text-amber-700">{fmtGold(endGold)}</span>,
+          dolar olarak <span className="font-bold text-blue-700">{fmtUSD(endUSD)}</span> ediyor.
+        </p>
       </div>
-    </div>
-  )
-}
 
-function ResultRow({
-  icon,
-  label,
-  value,
-  diff,
-  pct,
-  positive,
-  isVisible,
-  delay,
-}: {
-  icon: string
-  label: string
-  value: string
-  diff: string
-  pct: number
-  positive: boolean
-  isVisible: boolean
-  delay: number
-}) {
-  return (
-    <div
-      className={`flex items-center gap-3 rounded-lg p-3 border transition-all duration-500 ${
-        positive
-          ? 'bg-emerald-50 border-emerald-200'
-          : 'bg-red-50 border-red-200'
-      }`}
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
-        transitionDelay: `${delay}s`,
-      }}
-    >
-      <span
-        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-          positive ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'
-        }`}
+      {/* Profit / loss */}
+      <div
+        className="bg-slate-50 border border-slate-200 rounded-lg p-3 transition-all duration-500"
+        style={{
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
+          transitionDelay: '0.2s',
+        }}
       >
-        {icon}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-slate-500">{label}</p>
-        <p className="text-sm font-bold text-slate-800">{value}</p>
-      </div>
-      <div className="text-right shrink-0">
-        <p className={`text-sm font-bold ${positive ? 'text-emerald-700' : 'text-red-700'}`}>
-          {diff}
-        </p>
-        <p className={`text-xs ${positive ? 'text-emerald-500' : 'text-red-500'}`}>
-          {pct >= 0 ? '+' : ''}%{pct.toFixed(1)}
+        <p className="text-sm text-slate-600">
+          Bu fon size TL bazında{' '}
+          <span className={`font-bold ${tlProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+            {fmtDiff(tlProfit, fmtTL)}
+          </span>
+          {tlProfit >= 0 ? ' kazandırmış' : ' kaybettirmiş'}, altın bazında{' '}
+          <span className={`font-bold ${goldProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+            {fmtDiff(goldProfit, fmtGold)}
+          </span>
+          {goldProfit >= 0 ? ' kazandırmış' : ' kaybettirmiş'}, dolar bazında{' '}
+          <span className={`font-bold ${usdProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+            {fmtDiff(usdProfit, fmtUSD)}
+          </span>
+          {usdProfit >= 0 ? ' kazandırmış' : ' kaybettirmiş'}.
         </p>
       </div>
     </div>
   )
 }
+
