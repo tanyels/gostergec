@@ -202,12 +202,18 @@ export function FundMeltCounter({
           {formatUSD(isVisible ? startUSD : endUSD)}
         </span>
         <p
-          className={`text-xs mt-2 ${isUSDPositive ? 'text-emerald-600' : 'text-red-600'}`}
+          className={`text-xs mt-2 font-medium ${isUSDPositive ? 'text-emerald-600' : 'text-red-600'}`}
           style={{ opacity: isDone ? 1 : 0, transition: 'opacity 0.5s' }}
         >
+          {formatReturnLabel(usdReturn)} · {isUSDPositive ? '+' : ''}{formatUSD(endUSD - startUSD)}
+        </p>
+        <p
+          className={`text-xs mt-1 ${isUSDPositive ? 'text-emerald-600' : 'text-red-600'}`}
+          style={{ opacity: isDone ? 1 : 0, transition: 'opacity 0.5s 0.2s' }}
+        >
           {isUSDPositive
-            ? `Fonunuz dolar bazında da kazandırmış (${formatReturnLabel(usdReturn)})`
-            : `Fonunuza yatırdığınız para bugün sadece ${formatUSD(endUSD)} ediyor (${formatReturnLabel(usdReturn)})`
+            ? `Fonunuz dolar bazında da ${formatUSD(endUSD - startUSD)} kazandırmış`
+            : `Fonunuza yatırdığınız para bugün sadece ${formatUSD(endUSD)} ediyor — ${formatUSD(startUSD - endUSD)} kaybettiniz`
           }
         </p>
       </div>
