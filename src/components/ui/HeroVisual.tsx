@@ -6,17 +6,17 @@ import { FundMeltCounter } from './FundMeltCounter'
 import { FUNDS } from '@/lib/data/funds'
 import { calculateRealReturns, type RealReturns } from '@/lib/utils/calculations'
 
-const AMOUNT = 10000
+const DEFAULT_AMOUNT = 10000
 
 export function HeroVisual() {
   const [selectedFund, setSelectedFund] = useState('')
+  const [amount, setAmount] = useState(DEFAULT_AMOUNT)
   const [results, setResults] = useState<RealReturns | null>(null)
   const [loading, setLoading] = useState(false)
 
   const fund = FUNDS.find((f) => f.code === selectedFund)
 
-  async function handleFundChange(code: string) {
-    setSelectedFund(code)
+  async function fetchResults(code: string, amt: number) {
     if (!code) {
       setResults(null)
       return
@@ -27,7 +27,7 @@ export function HeroVisual() {
       const data = await calculateRealReturns({
         fundCode: code,
         startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        amountTry: AMOUNT,
+        amountTry: amt,
       })
       setResults(data)
     } catch {
@@ -37,13 +37,23 @@ export function HeroVisual() {
     }
   }
 
+  function handleFundChange(code: string) {
+    setSelectedFund(code)
+    fetchResults(code, amount)
+  }
+
+  function handleAmountChange(val: number) {
+    setAmount(val)
+    if (selectedFund) fetchResults(selectedFund, val)
+  }
+
   const tlReturn = results?.tryReturn ?? 67
   const usdReturn = results?.usdReturn ?? -8
-  const endTL = results?.endValueTry ?? 16700
-  const endUSD = results?.endValueUsd ?? 1740
+  const endTL = results?.endValueTry ?? Math.round(amount * 1.67)
+  const endUSD = results?.endValueUsd ?? Math.round(amount * 0.174)
   const startUSD = results
     ? Math.round(results.endValueUsd / (1 + results.usdReturn / 100))
-    : 1890
+    : Math.round(amount * 0.189)
 
   return (
     <section className="w-full py-8">
@@ -95,13 +105,14 @@ export function HeroVisual() {
           </div>
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <FundMeltCounter
-              startTL={AMOUNT}
+              startTL={amount}
               endTL={Math.round(endTL)}
               startUSD={startUSD}
               endUSD={Math.round(endUSD)}
               tlReturn={tlReturn}
               usdReturn={usdReturn}
               fundName={fund?.name}
+              onAmountChange={handleAmountChange}
             />
           </div>
         </div>

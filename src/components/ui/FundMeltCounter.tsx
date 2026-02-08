@@ -18,6 +18,7 @@ interface Props {
   tlReturn: number
   usdReturn: number
   fundName?: string
+  onAmountChange?: (amount: number) => void
 }
 
 export function FundMeltCounter({
@@ -28,6 +29,7 @@ export function FundMeltCounter({
   tlReturn,
   usdReturn,
   fundName,
+  onAmountChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const tlRef = useRef<HTMLSpanElement>(null)
@@ -137,9 +139,27 @@ export function FundMeltCounter({
       <h3 className="text-lg font-bold text-slate-800 mb-1">Fon Erime Sayacı</h3>
       <p className="text-xs text-slate-500 mb-6">{subtitle}</p>
 
-      <p className="text-sm text-slate-600 mb-4 font-medium">
-        Tam 1 yıl önce {startTL.toLocaleString('tr-TR')} ₺ yatırsaydınız...
-      </p>
+      <div className="flex items-baseline gap-1.5 mb-4 flex-wrap">
+        <span className="text-sm text-slate-600 font-medium">Tam 1 yıl önce</span>
+        <input
+          type="number"
+          defaultValue={startTL}
+          min={100}
+          step={1000}
+          onBlur={(e) => {
+            const val = parseInt(e.target.value) || 10000
+            onAmountChange?.(val)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const val = parseInt((e.target as HTMLInputElement).value) || 10000
+              onAmountChange?.(val)
+            }
+          }}
+          className="w-28 border border-slate-300 rounded px-2 py-0.5 text-sm font-bold text-slate-800 bg-white focus:ring-2 focus:ring-slate-400 focus:border-slate-400 text-center"
+        />
+        <span className="text-sm text-slate-600 font-medium">₺ yatırsaydınız...</span>
+      </div>
 
       {/* TL Counter — what the fund shows */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-3">
