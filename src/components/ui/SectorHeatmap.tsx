@@ -4,47 +4,65 @@ import { useState } from 'react'
 
 type Benchmark = 'usd' | 'eur' | 'gold'
 
+type YearData = { [year: string]: number }
+
 interface CategoryPerformance {
   category: string
   categoryEn: string
-  years: { [year: string]: number }
+  usd: YearData
+  eur: YearData
+  gold: YearData
 }
 
 const CATEGORY_PERFORMANCE: CategoryPerformance[] = [
   {
     category: 'Altın Fonları',
     categoryEn: 'Gold Funds',
-    years: { '2019': 25, '2020': 38, '2021': 5, '2022': 12, '2023': 28, '2024': 22 }
+    usd:  { '2019': 18, '2020': 23, '2021': -3, '2022': -3, '2023': 12, '2024': 26 },
+    eur:  { '2019': 20, '2020': 13, '2021': 5,  '2022': 3,  '2023': 8,  '2024': 33 },
+    gold: { '2019': 0,  '2020': -1, '2021': -1, '2022': -1, '2023': -1, '2024': -1 },
   },
   {
     category: 'Yabancı Hisse',
     categoryEn: 'Foreign Equity',
-    years: { '2019': 28, '2020': 15, '2021': 22, '2022': -8, '2023': 18, '2024': 25 }
+    usd:  { '2019': 27, '2020': 17, '2021': 11, '2022': -10, '2023': 14, '2024': 19 },
+    eur:  { '2019': 30, '2020': 7,  '2021': 20, '2022': -4,  '2023': 10, '2024': 26 },
+    gold: { '2019': 7,  '2020': -7, '2021': 13, '2022': -8,  '2023': 0,  '2024': -6 },
   },
   {
     category: 'Döviz Fonları',
     categoryEn: 'Currency Funds',
-    years: { '2019': 8, '2020': 12, '2021': -2, '2022': 5, '2023': 8, '2024': 6 }
+    usd:  { '2019': -1, '2020': 3,  '2021': -5, '2022': -3, '2023': 0,  '2024': -3 },
+    eur:  { '2019': 1,  '2020': -6, '2021': 3,  '2022': 3,  '2023': -3, '2024': 3 },
+    gold: { '2019': -16,'2020': -17,'2021': -2, '2022': -1, '2023': -12,'2024': -23 },
   },
   {
     category: 'Hisse Fonları',
     categoryEn: 'Equity Funds',
-    years: { '2019': 5, '2020': -15, '2021': -8, '2022': -25, '2023': 12, '2024': 8 }
+    usd:  { '2019': 8,  '2020': 1,  '2021': -31,'2022': 94, '2023': -18,'2024': 7 },
+    eur:  { '2019': 11, '2020': -8, '2021': -25,'2022': 106,'2023': -20,'2024': 13 },
+    gold: { '2019': -9, '2020': -19,'2021': -29,'2022': 98, '2023': -27,'2024': -15 },
   },
   {
     category: 'Karma Fonlar',
     categoryEn: 'Mixed Funds',
-    years: { '2019': 2, '2020': -8, '2021': -12, '2022': -18, '2023': 5, '2024': 2 }
+    usd:  { '2019': 5,  '2020': -7, '2021': -26,'2022': 25, '2023': -14,'2024': 5 },
+    eur:  { '2019': 7,  '2020': -15,'2021': -20,'2022': 32, '2023': -17,'2024': 11 },
+    gold: { '2019': -12,'2020': -26,'2021': -24,'2022': 27, '2023': -25,'2024': -17 },
   },
   {
     category: 'Tahvil Fonları',
     categoryEn: 'Bond Funds',
-    years: { '2019': -5, '2020': -18, '2021': -25, '2022': -35, '2023': -15, '2024': -12 }
+    usd:  { '2019': 2,  '2020': -10,'2021': -33,'2022': -20,'2023': -11,'2024': 19 },
+    eur:  { '2019': 4,  '2020': -18,'2021': -27,'2022': -15,'2023': -14,'2024': 26 },
+    gold: { '2019': -14,'2020': -28,'2021': -31,'2022': -19,'2023': -22,'2024': -6 },
   },
   {
     category: 'Para Piyasası',
     categoryEn: 'Money Market',
-    years: { '2019': -12, '2020': -28, '2021': -35, '2022': -45, '2023': -25, '2024': -22 }
+    usd:  { '2019': -1, '2020': -11,'2021': -35,'2022': -22,'2023': -14,'2024': 17 },
+    eur:  { '2019': 1,  '2020': -19,'2021': -29,'2022': -18,'2023': -17,'2024': 24 },
+    gold: { '2019': -16,'2020': -29,'2021': -33,'2022': -21,'2023': -25,'2024': -8 },
   },
 ]
 
@@ -62,10 +80,11 @@ export function SectorHeatmap() {
   const [benchmark, setBenchmark] = useState<Benchmark>('usd')
   const [showValues, setShowValues] = useState(false)
 
-  // Find best category for current year
+  // Find best category for current year based on selected benchmark
   const currentYear = '2024'
+  const benchmarkLabel = benchmark === 'usd' ? 'USD' : benchmark === 'eur' ? 'EUR' : 'Altın'
   const bestCategory = CATEGORY_PERFORMANCE.reduce((best, cat) =>
-    cat.years[currentYear] > best.years[currentYear] ? cat : best
+    cat[benchmark][currentYear] > best[benchmark][currentYear] ? cat : best
   )
 
   return (
@@ -103,7 +122,7 @@ export function SectorHeatmap() {
       <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
         <p className="text-emerald-800">
           <span className="font-semibold">🏆 {currentYear} En İyi Kategori:</span>{' '}
-          {bestCategory.category} ({bestCategory.years[currentYear] >= 0 ? '+' : ''}{bestCategory.years[currentYear]}% USD)
+          {bestCategory.category} ({bestCategory[benchmark][currentYear] >= 0 ? '+' : ''}{bestCategory[benchmark][currentYear]}% {benchmarkLabel})
         </p>
       </div>
 
@@ -113,7 +132,7 @@ export function SectorHeatmap() {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50">
-                <th className="text-left px-4 py-3 text-sm font-semibold text-slate-600 sticky left-0 bg-slate-50">
+                <th className="text-left px-4 py-3 text-sm font-semibold text-slate-600 sticky left-0 bg-slate-50 whitespace-nowrap min-w-[140px]">
                   Kategori
                 </th>
                 {YEARS.map((year) => (
@@ -128,17 +147,18 @@ export function SectorHeatmap() {
             </thead>
             <tbody>
               {CATEGORY_PERFORMANCE.map((cat) => {
-                const avgReturn = Object.values(cat.years).reduce((a, b) => a + b, 0) / Object.values(cat.years).length
+                const years = cat[benchmark]
+                const avgReturn = Object.values(years).reduce((a, b) => a + b, 0) / Object.values(years).length
                 const avgGrade = getGrade(avgReturn)
 
                 return (
                   <tr key={cat.category} className="border-t border-slate-100">
-                    <td className="px-4 py-3 sticky left-0 bg-white">
+                    <td className="px-4 py-3 sticky left-0 bg-white whitespace-nowrap">
                       <p className="font-medium text-slate-800">{cat.category}</p>
                       <p className="text-xs text-slate-500">{cat.categoryEn}</p>
                     </td>
                     {YEARS.map((year) => {
-                      const value = cat.years[year]
+                      const value = years[year]
                       const { grade, color, bgColor } = getGrade(value)
 
                       return (
