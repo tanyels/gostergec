@@ -8,11 +8,16 @@ import { calculateRealReturns, type RealReturns } from '@/lib/utils/calculations
 
 const DEFAULT_AMOUNT = 10000
 
-// Funds likely to show USD losses — makes the point immediately
-const USD_LOSER_CODES = ['IST', 'AK1', 'YKP', 'IPB', 'TTE', 'AFA']
+// Candidate funds for random selection
+const CANDIDATE_CODES = ['IST', 'AK1', 'YKP', 'IPB', 'TTE', 'AFA']
 
-function pickRandomLoser(): string {
-  return USD_LOSER_CODES[Math.floor(Math.random() * USD_LOSER_CODES.length)]
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
 }
 
 export function HeroVisual() {
@@ -24,13 +29,37 @@ export function HeroVisual() {
 
   const fund = FUNDS.find((f) => f.code === selectedFund)
 
-  // Pick a random USD-losing fund on first load
+  // Pick a random fund that has TL+ and USD- on first load
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
-    const code = pickRandomLoser()
-    setSelectedFund(code)
-    fetchResults(code, DEFAULT_AMOUNT)
+
+    async function findIdealFund() {
+      const shuffled = shuffle(CANDIDATE_CODES)
+      for (const code of shuffled) {
+        try {
+          const data = await calculateRealReturns({
+            fundCode: code,
+            startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            amountTry: DEFAULT_AMOUNT,
+          })
+          if (data.tryReturn > 0 && data.usdReturn < 0) {
+            setSelectedFund(code)
+            setResults(data)
+            return
+          }
+        } catch {
+          continue
+        }
+      }
+      // Fallback: just use the first one even if it doesn't match
+      const fallback = shuffled[0]
+      setSelectedFund(fallback)
+      fetchResults(fallback, DEFAULT_AMOUNT)
+    }
+
+    setLoading(true)
+    findIdealFund().finally(() => setLoading(false))
   }, [])
 
   async function fetchResults(code: string, amt: number) {
