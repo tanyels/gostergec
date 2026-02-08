@@ -93,14 +93,15 @@ export function HeroVisual() {
     if (selectedFund) fetchResults(selectedFund, val)
   }
 
-  // Placeholder defaults based on ~2024 rates (USD/TRY ≈ 30 start, ≈ 36 end)
+  // Placeholder defaults based on ~2024 rates
   const tlReturn = results?.tryReturn ?? 67
   const usdReturn = results?.usdReturn ?? -8
+  const goldReturn = results?.goldReturn ?? -18
   const endTL = results?.endValueTry ?? Math.round(amount * 1.67)
-  const startUSD = results
-    ? Math.round(results.endValueUsd / (1 + results.usdReturn / 100))
-    : Math.round(amount / 30)
-  const endUSD = results?.endValueUsd ?? Math.round(startUSD * (1 + usdReturn / 100))
+  const startUSD = results?.startValueUsd ?? amount / 32
+  const endUSD = results?.endValueUsd ?? (amount * 1.67) / 36
+  const startGold = results?.startValueGold ?? amount / 2500
+  const endGold = results?.endValueGold ?? (amount * 1.67) / 3200
 
   return (
     <section className="w-full py-8">
@@ -154,10 +155,13 @@ export function HeroVisual() {
             <FundMeltCounter
               startTL={amount}
               endTL={Math.round(endTL)}
-              startUSD={startUSD}
-              endUSD={Math.round(endUSD)}
               tlReturn={tlReturn}
+              startUSD={startUSD}
+              endUSD={endUSD}
               usdReturn={usdReturn}
+              startGold={startGold}
+              endGold={endGold}
+              goldReturn={goldReturn}
               fundName={fund?.name}
               onAmountChange={handleAmountChange}
             />

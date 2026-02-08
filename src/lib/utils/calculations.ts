@@ -7,7 +7,10 @@ export interface RealReturns {
   goldReturn: number     // Gold-adjusted return (%)
   startValue: number     // Starting amount in TL
   endValueTry: number    // Ending value in TL
+  startValueUsd: number  // Starting value in USD
   endValueUsd: number    // Ending value in USD equivalent
+  startValueGold: number // Starting value in gold grams
+  endValueGold: number   // Ending value in gold grams
 }
 
 interface CalculateParams {
@@ -74,7 +77,10 @@ export async function calculateRealReturns(params: CalculateParams): Promise<Rea
       goldReturn,
       startValue: amountTry,
       endValueTry,
+      startValueUsd,
       endValueUsd,
+      startValueGold,
+      endValueGold,
     }
   } catch (error) {
     console.error('Calculation failed:', error)
@@ -86,7 +92,10 @@ export async function calculateRealReturns(params: CalculateParams): Promise<Rea
       goldReturn: -18.2,
       startValue: amountTry,
       endValueTry: amountTry * 1.854,
-      endValueUsd: amountTry * 0.877 / 34,
+      startValueUsd: amountTry / 32,
+      endValueUsd: amountTry * 1.854 / 36,
+      startValueGold: amountTry / 2500,
+      endValueGold: amountTry * 1.854 / 3200,
     }
   }
 }

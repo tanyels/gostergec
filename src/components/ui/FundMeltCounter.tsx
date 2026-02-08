@@ -1,22 +1,31 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-function formatTL(value: number): string {
-  return value.toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' ₺'
+function fmtTL(v: number) {
+  return v.toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' ₺'
 }
-
-function formatUSD(value: number): string {
-  return '$' + value.toLocaleString('tr-TR', { maximumFractionDigits: 0 })
+function fmtUSD(v: number) {
+  return '$' + v.toLocaleString('tr-TR', { maximumFractionDigits: 0 })
+}
+function fmtGold(v: number) {
+  return v.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' gr'
+}
+function fmtDiff(v: number, fmt: (n: number) => string) {
+  const abs = Math.abs(v)
+  return v >= 0 ? '+' + fmt(abs) : '-' + fmt(abs)
 }
 
 interface Props {
   startTL: number
   endTL: number
+  tlReturn: number
   startUSD: number
   endUSD: number
-  tlReturn: number
   usdReturn: number
+  startGold: number
+  endGold: number
+  goldReturn: number
   fundName?: string
   onAmountChange?: (amount: number) => void
 }
@@ -24,26 +33,22 @@ interface Props {
 export function FundMeltCounter({
   startTL,
   endTL,
+  tlReturn,
   startUSD,
   endUSD,
-  tlReturn,
   usdReturn,
+  startGold,
+  endGold,
+  goldReturn,
   fundName,
   onAmountChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const tlRef = useRef<HTMLSpanElement>(null)
-  const usdRef = useRef<HTMLSpanElement>(null)
   const [isVisible, setIsVisible] = useState(false)
-  const [isDone, setIsDone] = useState(false)
-  const animFrameRef = useRef<number>(0)
-  const prevDataRef = useRef({ endTL, endUSD })
 
-  // Intersection Observer
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -53,92 +58,30 @@ export function FundMeltCounter({
       },
       { threshold: 0.3 }
     )
-
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
 
-  // Reset and re-animate when data changes
   useEffect(() => {
-    if (prevDataRef.current.endTL !== endTL || prevDataRef.current.endUSD !== endUSD) {
-      prevDataRef.current = { endTL, endUSD }
-      setIsDone(false)
-      if (isVisible) {
-        // Small delay so DOM updates first
-        const timer = setTimeout(() => animate(), 50)
-        return () => clearTimeout(timer)
-      }
-    }
-  }, [endTL, endUSD, isVisible])
+    setIsVisible(false)
+    const timer = setTimeout(() => setIsVisible(true), 50)
+    return () => clearTimeout(timer)
+  }, [endTL, endUSD, endGold])
 
-  const animate = useCallback(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reducedMotion) {
-      if (tlRef.current) tlRef.current.textContent = formatTL(endTL)
-      if (usdRef.current) usdRef.current.textContent = formatUSD(endUSD)
-      setIsDone(true)
-      return
-    }
+  const tlProfit = endTL - startTL
+  const usdProfit = endUSD - startUSD
+  const goldProfit = endGold - startGold
 
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-
-    const duration = 2000
-    const startTime = performance.now()
-
-    let lastTLVal = -1, lastUSDVal = -1
-
-    function tick(now: number) {
-      const elapsed = now - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-
-      const currentTL = Math.round(startTL + (endTL - startTL) * eased)
-      const currentUSD = Math.round(startUSD + (endUSD - startUSD) * eased)
-
-      if (currentTL !== lastTLVal && tlRef.current) {
-        tlRef.current.textContent = formatTL(currentTL)
-        lastTLVal = currentTL
-      }
-      if (currentUSD !== lastUSDVal && usdRef.current) {
-        usdRef.current.textContent = formatUSD(currentUSD)
-        lastUSDVal = currentUSD
-      }
-
-      if (progress < 1) {
-        animFrameRef.current = requestAnimationFrame(tick)
-      } else {
-        setIsDone(true)
-      }
-    }
-
-    animFrameRef.current = requestAnimationFrame(tick)
-  }, [startTL, endTL, startUSD, endUSD])
-
-  // Initial animation when first visible
-  useEffect(() => {
-    if (isVisible) animate()
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-    }
-  }, [isVisible, animate])
-
-  const isUSDPositive = usdReturn >= 0
   const subtitle = fundName
     ? `${fundName} — Son 1 Yıl`
     : 'Bir fon seçerek gerçek sonucu görün'
 
-  const insight = isUSDPositive
-    ? 'Bu fonla hem TL hem USD bazında kazanmışsınız.'
-    : 'Paranız TL\u2019de büyüyor ama gerçek değeri eriyor.'
-
-  const formatReturnLabel = (val: number) =>
-    `${val >= 0 ? '+' : ''}%${val.toFixed(1)} ${val >= 0 ? '↑' : '↓'}`
-
   return (
     <div ref={containerRef}>
-      <h3 className="text-lg font-bold text-slate-800 mb-1">Fon Erime Sayacı</h3>
-      <p className="text-xs text-slate-500 mb-6">{subtitle}</p>
+      <h3 className="text-lg font-bold text-slate-800 mb-1">Gerçek Sonuç</h3>
+      <p className="text-xs text-slate-500 mb-5">{subtitle}</p>
 
+      {/* Amount input */}
       <div className="flex items-baseline gap-1.5 mb-4 flex-wrap">
         <span className="text-sm text-slate-600 font-medium">Tam 1 yıl önce</span>
         <input
@@ -158,70 +101,126 @@ export function FundMeltCounter({
           }}
           className="w-28 border border-slate-300 rounded px-2 py-0.5 text-sm font-bold text-slate-800 bg-white focus:ring-2 focus:ring-slate-400 focus:border-slate-400 text-center"
         />
-        <span className="text-sm text-slate-600 font-medium">₺ yatırsaydınız...</span>
+        <span className="text-sm text-slate-600 font-medium">₺ yatırdınız.</span>
       </div>
 
-      {/* TL Counter — what the fund shows */}
-      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-3">
-        <p className="text-sm font-medium text-emerald-700 mb-1">Fona yatırdınız, bugün elinizde:</p>
-        <span
-          ref={tlRef}
-          className="text-3xl font-bold text-emerald-600"
-        >
-          {formatTL(isVisible ? startTL : endTL)}
-        </span>
-        <p
-          className="text-sm text-emerald-500 mt-1 font-medium transition-opacity duration-500"
-          style={{ opacity: isDone ? 1 : 0 }}
-        >
-          {formatReturnLabel(tlReturn)}
+      {/* What you could have bought */}
+      <div
+        className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 transition-all duration-500"
+        style={{
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
+        }}
+      >
+        <p className="text-sm text-slate-600">
+          {fmtTL(startTL)} ile{' '}
+          <span className="font-bold text-amber-700">{fmtGold(startGold)}</span> altın veya{' '}
+          <span className="font-bold text-blue-700">{fmtUSD(startUSD)}</span> sahibi olabilirdiniz.
         </p>
       </div>
 
-      {/* VS divider */}
-      <p className="text-center text-slate-400 font-bold text-sm my-1">ama</p>
+      {/* "Peki fon ne getirmiş?" */}
+      <p
+        className="text-sm font-semibold text-slate-700 mb-3 transition-all duration-500"
+        style={{
+          opacity: isVisible ? 1 : 0,
+          transitionDelay: '0.1s',
+        }}
+      >
+        Peki aldığınız fon ne getirmiş?
+      </p>
 
-      {/* USD Counter — the reality */}
-      <div
-        className={`border rounded-lg p-4 mt-3 transition-shadow duration-700 ${
-          isUSDPositive
-            ? 'bg-emerald-50 border-emerald-200'
-            : `bg-red-50 border-red-200 ${isDone ? 'shadow-md shadow-red-100' : ''}`
+      {/* Result rows */}
+      <div className="space-y-2">
+        {/* TL */}
+        <ResultRow
+          icon="₺"
+          label="TL olarak"
+          value={fmtTL(endTL)}
+          diff={fmtDiff(tlProfit, fmtTL)}
+          pct={tlReturn}
+          positive={tlProfit >= 0}
+          isVisible={isVisible}
+          delay={0.15}
+        />
+        {/* USD */}
+        <ResultRow
+          icon="$"
+          label="Dolar olarak"
+          value={fmtUSD(endUSD)}
+          diff={fmtDiff(usdProfit, fmtUSD)}
+          pct={usdReturn}
+          positive={usdProfit >= 0}
+          isVisible={isVisible}
+          delay={0.25}
+        />
+        {/* Gold */}
+        <ResultRow
+          icon="Au"
+          label="Altın olarak"
+          value={fmtGold(endGold)}
+          diff={fmtDiff(goldProfit, fmtGold)}
+          pct={goldReturn}
+          positive={goldProfit >= 0}
+          isVisible={isVisible}
+          delay={0.35}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ResultRow({
+  icon,
+  label,
+  value,
+  diff,
+  pct,
+  positive,
+  isVisible,
+  delay,
+}: {
+  icon: string
+  label: string
+  value: string
+  diff: string
+  pct: number
+  positive: boolean
+  isVisible: boolean
+  delay: number
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-lg p-3 border transition-all duration-500 ${
+        positive
+          ? 'bg-emerald-50 border-emerald-200'
+          : 'bg-red-50 border-red-200'
+      }`}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
+        transitionDelay: `${delay}s`,
+      }}
+    >
+      <span
+        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+          positive ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'
         }`}
       >
-        <p className={`text-sm font-medium mb-1 ${isUSDPositive ? 'text-emerald-700' : 'text-red-700'}`}>
-          Yatırım yapmayıp dolar tutsaydınız:
+        {icon}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-slate-500">{label}</p>
+        <p className="text-sm font-bold text-slate-800">{value}</p>
+      </div>
+      <div className="text-right shrink-0">
+        <p className={`text-sm font-bold ${positive ? 'text-emerald-700' : 'text-red-700'}`}>
+          {diff}
         </p>
-        <p className="text-xs text-emerald-600 mb-2">
-          1 yıl önce {startTL.toLocaleString('tr-TR')} ₺ = <span className="font-bold">{formatUSD(startUSD)}</span> idi
-        </p>
-        <span
-          ref={usdRef}
-          className={`text-3xl font-bold ${isUSDPositive ? 'text-emerald-600' : 'text-red-600'}`}
-        >
-          {formatUSD(isVisible ? startUSD : endUSD)}
-        </span>
-        <p
-          className={`text-xs mt-2 font-medium ${isUSDPositive ? 'text-emerald-600' : 'text-red-600'}`}
-          style={{ opacity: isDone ? 1 : 0, transition: 'opacity 0.5s' }}
-        >
-          {formatReturnLabel(usdReturn)} · {isUSDPositive ? '+' : ''}{formatUSD(endUSD - startUSD)}
-        </p>
-        <p
-          className={`text-xs mt-1 ${isUSDPositive ? 'text-emerald-600' : 'text-red-600'}`}
-          style={{ opacity: isDone ? 1 : 0, transition: 'opacity 0.5s 0.2s' }}
-        >
-          {isUSDPositive
-            ? `Fonunuz dolar bazında da ${formatUSD(endUSD - startUSD)} kazandırmış`
-            : `Fonunuza yatırdığınız para bugün sadece ${formatUSD(endUSD)} ediyor — ${formatUSD(startUSD - endUSD)} kaybettiniz`
-          }
+        <p className={`text-xs ${positive ? 'text-emerald-500' : 'text-red-500'}`}>
+          {pct >= 0 ? '+' : ''}%{pct.toFixed(1)}
         </p>
       </div>
-
-      {/* Insight */}
-      <p className="text-center text-sm text-slate-500 mt-6 italic">
-        {insight}
-      </p>
     </div>
   )
 }
