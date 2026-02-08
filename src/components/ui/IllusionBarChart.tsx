@@ -89,11 +89,6 @@ export function IllusionBarChart({ tlReturn, usdReturn, fundName }: Props) {
         />
       </div>
 
-      {/* Zero line label */}
-      <div className="flex justify-center mt-1">
-        <span className="text-xs font-medium text-slate-400">%0</span>
-      </div>
-
       {/* Insight */}
       <p className="text-center text-sm text-slate-500 mt-4 italic">
         {insight}
