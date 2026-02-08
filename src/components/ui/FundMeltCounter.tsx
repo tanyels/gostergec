@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { FUNDS } from '@/lib/data/funds'
 
 function fmtTL(v: number) {
   return v.toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' ₺'
@@ -26,7 +27,9 @@ interface Props {
   startGold: number
   endGold: number
   goldReturn: number
+  selectedFund: string
   fundName?: string
+  onFundChange?: (code: string) => void
   onAmountChange?: (amount: number) => void
 }
 
@@ -40,7 +43,9 @@ export function FundMeltCounter({
   startGold,
   endGold,
   goldReturn,
+  selectedFund,
   fundName,
+  onFundChange,
   onAmountChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -72,18 +77,24 @@ export function FundMeltCounter({
   const usdProfit = endUSD - startUSD
   const goldProfit = endGold - startGold
 
-  const subtitle = fundName
-    ? `${fundName} — Son 1 Yıl`
-    : 'Bir fon seçerek gerçek sonucu görün'
-
   return (
     <div ref={containerRef}>
       <h3 className="text-lg font-bold text-slate-800 mb-1">Gerçek Sonuç</h3>
-      <p className="text-xs text-slate-500 mb-5">{subtitle}</p>
 
-      {/* Amount input */}
-      <div className="flex items-baseline gap-1.5 mb-4 flex-wrap">
-        <span className="text-sm text-slate-600 font-medium">Tam 1 yıl önce</span>
+      {/* Inline sentence: "Tam 1 yıl önce [FON] fonuna [10.000] ₺ yatırdınız." */}
+      <div className="flex items-baseline gap-1.5 mb-4 flex-wrap text-sm text-slate-600 font-medium">
+        <span>Tam 1 yıl önce</span>
+        <select
+          value={selectedFund}
+          onChange={(e) => onFundChange?.(e.target.value)}
+          className="border border-slate-300 rounded px-2 py-0.5 text-sm font-bold text-slate-800 bg-white focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
+        >
+          <option value="">Fon seçin</option>
+          {FUNDS.map((f) => (
+            <option key={f.code} value={f.code}>{f.name}</option>
+          ))}
+        </select>
+        <span>fonuna</span>
         <input
           type="number"
           defaultValue={startTL}
@@ -101,7 +112,7 @@ export function FundMeltCounter({
           }}
           className="w-28 border border-slate-300 rounded px-2 py-0.5 text-sm font-bold text-slate-800 bg-white focus:ring-2 focus:ring-slate-400 focus:border-slate-400 text-center"
         />
-        <span className="text-sm text-slate-600 font-medium">₺ yatırdınız.</span>
+        <span>₺ yatırdınız.</span>
       </div>
 
       {/* What you could have bought */}

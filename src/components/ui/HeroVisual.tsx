@@ -162,7 +162,9 @@ export function HeroVisual() {
               startGold={startGold}
               endGold={endGold}
               goldReturn={goldReturn}
+              selectedFund={selectedFund}
               fundName={fund?.name}
+              onFundChange={handleFundChange}
               onAmountChange={handleAmountChange}
             />
           </div>
