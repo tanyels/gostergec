@@ -113,7 +113,7 @@ export function FundMeltCounter({
         }}
       >
         <p className="text-sm text-slate-600">
-          {fmtTL(startTL)} ile{' '}
+          1 yıl önce {fmtTL(startTL)} ile{' '}
           <span className="font-bold text-amber-700">{fmtGold(startGold)}</span> altın veya{' '}
           <span className="font-bold text-blue-700">{fmtUSD(startUSD)}</span> sahibi olabilirdiniz.
         </p>
