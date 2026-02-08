@@ -40,10 +40,10 @@ export function IllusionBarChart({ tlReturn, usdReturn, fundName }: Props) {
   const isTLPositive = tlReturn >= 0
   const isUSDPositive = usdReturn >= 0
 
-  // Normalize bar heights relative to the larger absolute value
+  // Bar heights as percentage of the half (max bar = 90% of half)
   const maxAbs = Math.max(Math.abs(tlReturn), Math.abs(usdReturn), 1)
-  const tlBarHeight = Math.max((Math.abs(tlReturn) / maxAbs) * 70, 5) // % of chart area, min 5%
-  const usdBarHeight = Math.max((Math.abs(usdReturn) / maxAbs) * 70, 5)
+  const tlBarPct = Math.max((Math.abs(tlReturn) / maxAbs) * 90, 4)
+  const usdBarPct = Math.max((Math.abs(usdReturn) / maxAbs) * 90, 4)
 
   const formatReturn = (val: number) =>
     `${val >= 0 ? '+' : ''}%${val.toFixed(1)}`
@@ -61,134 +61,151 @@ export function IllusionBarChart({ tlReturn, usdReturn, fundName }: Props) {
       <h3 className="text-lg font-bold text-slate-800 mb-1">Yanılsama vs Gerçek</h3>
       <p className="text-xs text-slate-500 mb-6">{subtitle}</p>
 
-      {/* Chart area */}
-      <div className="relative h-56 flex items-center justify-center gap-16">
-        {/* Zero line */}
-        <div className="absolute left-0 right-0 top-1/2 border-t-2 border-dashed border-slate-300">
-          <span className="absolute -top-5 right-0 text-xs font-medium text-slate-400">%0</span>
-        </div>
-
+      <div className="flex justify-center gap-14">
         {/* TL Bar */}
-        <div className="flex flex-col items-center z-10 h-full justify-center">
-          {isTLPositive ? (
-            <>
-              {/* Label above */}
-              <div
-                className="mb-1 transition-all"
-                style={{
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
-                  transitionDelay: '0.9s',
-                  transitionDuration: '0.4s',
-                }}
-              >
-                <span className="text-2xl font-bold text-emerald-600">{formatReturn(tlReturn)}</span>
-              </div>
-              {/* Bar growing up from center */}
-              <div
-                className="w-20 rounded-t-lg bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-lg"
-                style={{
-                  height: `${tlBarHeight}%`,
-                  transformOrigin: 'bottom',
-                  transform: isVisible ? 'scaleY(1)' : 'scaleY(0)',
-                  transition: 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-              />
-              {/* Center line sits here */}
-              <div style={{ height: '50%' }} />
-            </>
-          ) : (
-            <>
-              <div style={{ height: '50%' }} />
-              <div
-                className="w-20 rounded-b-lg bg-gradient-to-b from-red-500 to-red-600 shadow-lg"
-                style={{
-                  height: `${tlBarHeight}%`,
-                  transformOrigin: 'top',
-                  transform: isVisible ? 'scaleY(1)' : 'scaleY(0)',
-                  transition: 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-              />
-              <div
-                className="mt-1 transition-all"
-                style={{
-                  opacity: isVisible ? 1 : 0,
-                  transitionDelay: '0.9s',
-                  transitionDuration: '0.4s',
-                }}
-              >
-                <span className="text-2xl font-bold text-red-600">{formatReturn(tlReturn)}</span>
-              </div>
-            </>
-          )}
-          <div className="mt-2 text-center absolute bottom-0">
-            <p className="text-sm font-semibold text-slate-700">TL Getiri</p>
-            <p className="text-xs text-slate-400">Nominal</p>
-          </div>
-        </div>
+        <BarColumn
+          value={tlReturn}
+          barPct={tlBarPct}
+          positive={isTLPositive}
+          formatReturn={formatReturn}
+          isVisible={isVisible}
+          animDelay={0}
+          labelDelay={0.9}
+          label="TL Getiri"
+          sublabel="Nominal"
+        />
 
         {/* USD Bar */}
-        <div className="flex flex-col items-center z-10 h-full justify-center">
-          {isUSDPositive ? (
-            <>
-              <div
-                className="mb-1 transition-all"
-                style={{
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
-                  transitionDelay: '1.2s',
-                  transitionDuration: '0.4s',
-                }}
-              >
-                <span className="text-2xl font-bold text-emerald-600">{formatReturn(usdReturn)}</span>
-              </div>
-              <div
-                className="w-20 rounded-t-lg bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-lg"
-                style={{
-                  height: `${usdBarHeight}%`,
-                  transformOrigin: 'bottom',
-                  transform: isVisible ? 'scaleY(1)' : 'scaleY(0)',
-                  transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s',
-                }}
-              />
-              <div style={{ height: '50%' }} />
-            </>
-          ) : (
-            <>
-              <div style={{ height: '50%' }} />
-              <div
-                className="w-20 rounded-b-lg bg-gradient-to-b from-red-500 to-red-600 shadow-lg"
-                style={{
-                  height: `${usdBarHeight}%`,
-                  transformOrigin: 'top',
-                  transform: isVisible ? 'scaleY(1)' : 'scaleY(0)',
-                  transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s',
-                }}
-              />
-              <div
-                className="mt-1 transition-all"
-                style={{
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? 'translateY(0)' : 'translateY(-8px)',
-                  transitionDelay: '1.2s',
-                  transitionDuration: '0.4s',
-                }}
-              >
-                <span className="text-2xl font-bold text-red-600">{formatReturn(usdReturn)}</span>
-              </div>
-            </>
-          )}
-          <div className="mt-2 text-center absolute bottom-0">
-            <p className="text-sm font-semibold text-slate-700">USD Getiri</p>
-            <p className="text-xs text-slate-400">Gerçek</p>
-          </div>
-        </div>
+        <BarColumn
+          value={usdReturn}
+          barPct={usdBarPct}
+          positive={isUSDPositive}
+          formatReturn={formatReturn}
+          isVisible={isVisible}
+          animDelay={0.3}
+          labelDelay={1.2}
+          label="USD Getiri"
+          sublabel="Gerçek"
+        />
+      </div>
+
+      {/* Zero line label */}
+      <div className="flex justify-center mt-1">
+        <span className="text-xs font-medium text-slate-400">%0</span>
       </div>
 
       {/* Insight */}
-      <p className="text-center text-sm text-slate-500 mt-6 italic">
+      <p className="text-center text-sm text-slate-500 mt-4 italic">
         {insight}
       </p>
+    </div>
+  )
+}
+
+function BarColumn({
+  value,
+  barPct,
+  positive,
+  formatReturn,
+  isVisible,
+  animDelay,
+  labelDelay,
+  label,
+  sublabel,
+}: {
+  value: number
+  barPct: number
+  positive: boolean
+  formatReturn: (v: number) => string
+  isVisible: boolean
+  animDelay: number
+  labelDelay: number
+  label: string
+  sublabel: string
+}) {
+  return (
+    <div className="flex flex-col items-center" style={{ width: 80 }}>
+      {/* Percentage label — above bar if positive */}
+      {positive && (
+        <div
+          className="mb-1 h-8 flex items-end transition-all"
+          style={{
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
+            transitionDelay: `${labelDelay}s`,
+            transitionDuration: '0.4s',
+          }}
+        >
+          <span className="text-xl font-bold text-emerald-600">
+            {formatReturn(value)}
+          </span>
+        </div>
+      )}
+      {/* Spacer if negative (keep alignment) */}
+      {!positive && <div className="h-8" />}
+
+      {/* Chart area — fixed height, split into top half + bottom half */}
+      <div className="relative w-full" style={{ height: 160 }}>
+        {/* Zero line */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-px border-t-2 border-dashed border-slate-300" />
+
+        {/* Top half — positive bars grow from bottom up */}
+        <div className="absolute top-0 left-0 right-0 flex items-end justify-center" style={{ height: '50%' }}>
+          {positive && (
+            <div
+              className={`w-full rounded-t-lg shadow-lg ${
+                positive ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' : ''
+              }`}
+              style={{
+                height: `${barPct}%`,
+                transformOrigin: 'bottom',
+                transform: isVisible ? 'scaleY(1)' : 'scaleY(0)',
+                transition: `transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${animDelay}s`,
+              }}
+            />
+          )}
+        </div>
+
+        {/* Bottom half — negative bars grow from top down */}
+        <div className="absolute bottom-0 left-0 right-0 flex items-start justify-center" style={{ height: '50%' }}>
+          {!positive && (
+            <div
+              className="w-full rounded-b-lg bg-gradient-to-b from-red-500 to-red-600 shadow-lg"
+              style={{
+                height: `${barPct}%`,
+                transformOrigin: 'top',
+                transform: isVisible ? 'scaleY(1)' : 'scaleY(0)',
+                transition: `transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${animDelay}s`,
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Percentage label — below bar if negative */}
+      {!positive && (
+        <div
+          className="mt-1 h-8 flex items-start transition-all"
+          style={{
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? 'translateY(0)' : 'translateY(-8px)',
+            transitionDelay: `${labelDelay}s`,
+            transitionDuration: '0.4s',
+          }}
+        >
+          <span className="text-xl font-bold text-red-600">
+            {formatReturn(value)}
+          </span>
+        </div>
+      )}
+      {/* Spacer if positive (keep alignment) */}
+      {positive && <div className="h-8" />}
+
+      {/* Category label — always at the bottom, outside chart */}
+      <div className="text-center mt-1">
+        <p className="text-sm font-semibold text-slate-700">{label}</p>
+        <p className="text-xs text-slate-400">{sublabel}</p>
+      </div>
     </div>
   )
 }
