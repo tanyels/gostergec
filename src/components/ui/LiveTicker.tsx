@@ -45,7 +45,7 @@ export function LiveTicker() {
         <TickerItem label="USD/TRY" value={rates.usdTry} />
         <TickerItem label="EUR/TRY" value={rates.eurTry} />
         <TickerItem label="Gram Altın" value={rates.goldTry} suffix=" ₺" />
-        <TickerItem label="XAU/USD" value={rates.goldUsd} prefix="$" />
+        <TickerItem label="Ons Altın" value={rates.goldUsd} prefix="$" />
       </div>
     </div>
   )
