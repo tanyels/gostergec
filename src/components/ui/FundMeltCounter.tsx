@@ -172,8 +172,8 @@ export function FundMeltCounter({
         <p className={`text-sm font-medium mb-1 ${isUSDPositive ? 'text-emerald-700' : 'text-red-700'}`}>
           Yatırım yapmayıp dolar tutsaydınız:
         </p>
-        <p className="text-xs text-slate-400 mb-2">
-          1 yıl önce {startTL.toLocaleString('tr-TR')} ₺ = {formatUSD(startUSD)} idi
+        <p className="text-xs text-emerald-600 mb-2">
+          1 yıl önce {startTL.toLocaleString('tr-TR')} ₺ = <span className="font-bold">{formatUSD(startUSD)}</span> idi
         </p>
         <span
           ref={usdRef}
