@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { IllusionBarChart } from './IllusionBarChart'
 import { FundMeltCounter } from './FundMeltCounter'
 import { FUNDS } from '@/lib/data/funds'
@@ -8,13 +8,30 @@ import { calculateRealReturns, type RealReturns } from '@/lib/utils/calculations
 
 const DEFAULT_AMOUNT = 10000
 
+// Funds likely to show USD losses — makes the point immediately
+const USD_LOSER_CODES = ['IST', 'AK1', 'YKP', 'IPB', 'TTE', 'AFA']
+
+function pickRandomLoser(): string {
+  return USD_LOSER_CODES[Math.floor(Math.random() * USD_LOSER_CODES.length)]
+}
+
 export function HeroVisual() {
   const [selectedFund, setSelectedFund] = useState('')
   const [amount, setAmount] = useState(DEFAULT_AMOUNT)
   const [results, setResults] = useState<RealReturns | null>(null)
   const [loading, setLoading] = useState(false)
+  const initialized = useRef(false)
 
   const fund = FUNDS.find((f) => f.code === selectedFund)
+
+  // Pick a random USD-losing fund on first load
+  useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
+    const code = pickRandomLoser()
+    setSelectedFund(code)
+    fetchResults(code, DEFAULT_AMOUNT)
+  }, [])
 
   async function fetchResults(code: string, amt: number) {
     if (!code) {
