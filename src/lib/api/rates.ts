@@ -12,20 +12,29 @@ export interface LiveRates {
  */
 export async function fetchLiveRates(): Promise<LiveRates> {
   try {
-    // Fetch exchange rates from frankfurter.app (free, no key required)
-    const forexResponse = await fetch(
-      'https://api.frankfurter.app/latest?from=USD&to=TRY,EUR'
-    )
+    // Fetch exchange rates and gold price in parallel
+    const [forexResponse, goldResponse] = await Promise.all([
+      fetch('https://api.frankfurter.app/latest?from=USD&to=TRY,EUR'),
+      fetch('https://api.gold-api.com/price/XAU'),
+    ])
+
     const forexData = await forexResponse.json()
 
-    // For gold, we'll use a placeholder until we set up a real API
-    // Options: metals.live, goldapi.io (free tier), or calculate from XAU/USD
-    const goldUsd = 2650 // Placeholder - will fetch from API
-    const goldTry = goldUsd * forexData.rates.TRY / 31.1035 // Convert to per gram
+    // Parse gold price with fallback
+    let goldUsd = 2650 // Last-resort fallback
+    if (goldResponse.ok) {
+      const goldData = await goldResponse.json()
+      if (goldData.price && goldData.price > 0) {
+        goldUsd = goldData.price
+      }
+    }
+
+    const usdTry = forexData.rates.TRY
+    const goldTry = goldUsd * usdTry / 31.1035 // Convert oz to gram
 
     return {
-      usdTry: forexData.rates.TRY,
-      eurTry: forexData.rates.TRY / forexData.rates.EUR,
+      usdTry,
+      eurTry: usdTry / forexData.rates.EUR,
       goldTry,
       goldUsd,
       timestamp: new Date(),

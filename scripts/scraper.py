@@ -63,13 +63,27 @@ def fetch_exchange_rates_frankfurter(date: str) -> Optional[Dict]:
         return None
 
 
+def fetch_live_gold_price() -> Optional[float]:
+    """Fetch live gold price (USD/oz) from gold-api.com"""
+    try:
+        response = requests.get('https://api.gold-api.com/price/XAU', timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            price = data.get('price')
+            if price and price > 0:
+                return float(price)
+    except Exception as e:
+        print(f"  Warning: gold-api.com failed: {e}")
+    return None
+
+
 def fetch_gold_price(date: str, usd_try: float) -> Dict:
     """
-    Returns gold price for a given date using historical monthly averages (XAU/USD).
-    Interpolates between months for daily granularity.
+    Returns gold price for a given date.
+    For recent dates (2025+): tries live API first, falls back to historical table.
+    For older dates: uses historical monthly averages (XAU/USD).
     """
     # Monthly average gold prices (USD/oz) — source: World Gold Council / Kitco
-    # Format: (year, month): price
     GOLD_MONTHLY = {
         (2016,1):1097,(2016,2):1201,(2016,3):1246,(2016,4):1242,(2016,5):1259,(2016,6):1278,
         (2016,7):1337,(2016,8):1341,(2016,9):1326,(2016,10):1267,(2016,11):1237,(2016,12):1151,
@@ -89,27 +103,33 @@ def fetch_gold_price(date: str, usd_try: float) -> Dict:
         (2023,7):1962,(2023,8):1928,(2023,9):1921,(2023,10):1985,(2023,11):1992,(2023,12):2045,
         (2024,1):2043,(2024,2):2024,(2024,3):2164,(2024,4):2327,(2024,5):2341,(2024,6):2334,
         (2024,7):2399,(2024,8):2473,(2024,9):2585,(2024,10):2658,(2024,11):2672,(2024,12):2634,
-        (2025,1):2770,(2025,2):2850,(2025,3):2870,(2025,4):2880,(2025,5):2890,(2025,6):2900,
-        (2025,7):2900,(2025,8):2900,(2025,9):2900,(2025,10):2900,(2025,11):2900,(2025,12):2900,
-        (2026,1):2900,(2026,2):2900,(2026,3):2900,(2026,4):2900,(2026,5):2900,(2026,6):2900,
-        (2026,7):2900,(2026,8):2900,(2026,9):2900,(2026,10):2900,(2026,11):2900,(2026,12):2900,
+        (2025,1):2770,(2025,2):2850,
     }
 
     date_obj = datetime.strptime(date, '%Y-%m-%d')
     y, m = date_obj.year, date_obj.month
     key = (y, m)
 
-    if key in GOLD_MONTHLY:
-        gold_usd_oz = GOLD_MONTHLY[key]
-    else:
-        # Fallback: find nearest available month
-        all_keys = sorted(GOLD_MONTHLY.keys())
-        if (y, m) <= all_keys[0]:
-            gold_usd_oz = GOLD_MONTHLY[all_keys[0]]
-        elif (y, m) >= all_keys[-1]:
-            gold_usd_oz = GOLD_MONTHLY[all_keys[-1]]
+    gold_usd_oz = None
+
+    # For recent dates, try live API first
+    if (y, m) >= (2025, 2):
+        gold_usd_oz = fetch_live_gold_price()
+        if gold_usd_oz:
+            print(f"  Gold price from API: ${gold_usd_oz:.2f}/oz")
+
+    # Fall back to historical table
+    if gold_usd_oz is None:
+        if key in GOLD_MONTHLY:
+            gold_usd_oz = GOLD_MONTHLY[key]
         else:
-            gold_usd_oz = 2650  # Should not happen with the table above
+            all_keys = sorted(GOLD_MONTHLY.keys())
+            if (y, m) <= all_keys[0]:
+                gold_usd_oz = GOLD_MONTHLY[all_keys[0]]
+            elif (y, m) >= all_keys[-1]:
+                gold_usd_oz = GOLD_MONTHLY[all_keys[-1]]
+            else:
+                gold_usd_oz = 2650
 
     gold_try_gram = (gold_usd_oz * usd_try) / 31.1035  # oz to gram
 

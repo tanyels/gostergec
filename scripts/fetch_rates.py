@@ -24,6 +24,20 @@ SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+def fetch_gold_price():
+    """Fetch live gold price (USD/oz) from gold-api.com"""
+    try:
+        response = requests.get('https://api.gold-api.com/price/XAU', timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            price = data.get('price')
+            if price and price > 0:
+                return float(price)
+    except Exception as e:
+        print(f"  Warning: gold-api.com failed: {e}")
+    return None
+
+
 def fetch_rates_for_date(date_str: str):
     """Fetch exchange rates for a specific date"""
     try:
@@ -41,9 +55,11 @@ def fetch_rates_for_date(date_str: str):
         usd_try = data['rates']['TRY']
         eur_try = usd_try / data['rates']['EUR']
 
-        # Approximate gold price (for accurate data, use a gold API)
-        # Gold has historically been around $1200-2700/oz
-        gold_usd_oz = 2650.0  # You can enhance this with actual historical data
+        # Fetch live gold price, fallback to hardcoded
+        gold_usd_oz = fetch_gold_price()
+        if gold_usd_oz is None:
+            gold_usd_oz = 2650.0
+            print(f"  Using fallback gold price: ${gold_usd_oz}/oz")
         gold_try_gram = (gold_usd_oz * usd_try) / 31.1035
 
         return {
