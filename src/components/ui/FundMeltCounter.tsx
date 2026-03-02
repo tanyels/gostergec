@@ -115,61 +115,53 @@ export function FundMeltCounter({
         <span>₺ yatırdınız.</span>
       </div>
 
-      {/* What you could have bought */}
+      {/* Comparison table */}
       <div
-        className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 transition-all duration-500"
+        className="border border-slate-200 rounded-lg overflow-hidden transition-all duration-500"
         style={{
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
         }}
       >
-        <p className="text-sm text-slate-600">
-          1 yıl önce {fmtTL(startTL)} ile{' '}
-          <span className="font-bold text-amber-700">{fmtGold(startGold)}</span> altın veya{' '}
-          <span className="font-bold text-blue-700">{fmtUSD(startUSD)}</span> sahibi olabilirdiniz.
-        </p>
-      </div>
-
-      {/* Current value */}
-      <div
-        className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 transition-all duration-500"
-        style={{
-          opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
-          transitionDelay: '0.1s',
-        }}
-      >
-        <p className="text-sm text-slate-600">
-          Bugün fonunuz TL olarak <span className="font-bold text-slate-800">{fmtTL(endTL)}</span>,
-          altın olarak <span className="font-bold text-amber-700">{fmtGold(endGold)}</span>,
-          dolar olarak <span className="font-bold text-blue-700">{fmtUSD(endUSD)}</span> ediyor.
-        </p>
-      </div>
-
-      {/* Profit / loss */}
-      <div
-        className="bg-slate-50 border border-slate-200 rounded-lg p-3 transition-all duration-500"
-        style={{
-          opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
-          transitionDelay: '0.2s',
-        }}
-      >
-        <p className="text-sm text-slate-600">
-          Bu fon size TL bazında{' '}
-          <span className={`font-bold ${tlProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-            {fmtDiff(tlProfit, fmtTL)}
-          </span>
-          {tlProfit >= 0 ? ' kazandırmış' : ' kaybettirmiş'}, altın bazında{' '}
-          <span className={`font-bold ${goldProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-            {fmtDiff(goldProfit, fmtGold)}
-          </span>
-          {goldProfit >= 0 ? ' kazandırmış' : ' kaybettirmiş'}, dolar bazında{' '}
-          <span className={`font-bold ${usdProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-            {fmtDiff(usdProfit, fmtUSD)}
-          </span>
-          {usdProfit >= 0 ? ' kazandırmış' : ' kaybettirmiş'}.
-        </p>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-slate-100 text-slate-600">
+              <th className="text-left px-3 py-2 font-semibold">Birim</th>
+              <th className="text-right px-3 py-2 font-semibold">Başlangıç</th>
+              <th className="text-right px-3 py-2 font-semibold">Bugün</th>
+              <th className="text-right px-3 py-2 font-semibold">Fark</th>
+              <th className="text-center px-3 py-2 font-semibold">Durum</th>
+            </tr>
+          </thead>
+          <tbody>
+            {([
+              { label: 'TL ₺', start: fmtTL(startTL), end: fmtTL(endTL), diff: fmtDiff(tlProfit, fmtTL), profit: tlProfit },
+              { label: 'Altın', start: fmtGold(startGold), end: fmtGold(endGold), diff: fmtDiff(goldProfit, fmtGold), profit: goldProfit },
+              { label: 'Dolar', start: fmtUSD(startUSD), end: fmtUSD(endUSD), diff: fmtDiff(usdProfit, fmtUSD), profit: usdProfit },
+            ] as const).map((row) => (
+              <tr
+                key={row.label}
+                className={row.profit >= 0 ? 'bg-emerald-50' : 'bg-red-50'}
+              >
+                <td className="px-3 py-2 font-medium text-slate-700">{row.label}</td>
+                <td className="px-3 py-2 text-right text-slate-600">{row.start}</td>
+                <td className="px-3 py-2 text-right font-semibold text-slate-800">{row.end}</td>
+                <td className={`px-3 py-2 text-right font-bold ${row.profit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                  {row.diff}
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    row.profit >= 0
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {row.profit >= 0 ? '✓ Kazanç' : '✗ Kayıp'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
