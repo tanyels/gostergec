@@ -8,13 +8,13 @@ export default function Home() {
       {/* Live Ticker - USD, EUR, Gold prices */}
       <LiveTicker />
 
-      {/* Hero Visual - Yanılsama vs Gerçek + Gerçek Sonuç */}
-      <HeroVisual />
-
       {/* Fund Highlights - Top performers / worst performers */}
       <section className="py-8">
         <FundHighlights />
       </section>
+
+      {/* Hero Visual - Yanılsama vs Gerçek + Gerçek Sonuç */}
+      <HeroVisual />
     </div>
   )
 }
