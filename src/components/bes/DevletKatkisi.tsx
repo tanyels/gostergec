@@ -1,17 +1,26 @@
 'use client'
 
 import { useState } from 'react'
+import { BES_CATEGORY_RETURNS, TL_ANNUAL_DEPRECIATION_VS_USD } from '@/lib/data/bes-funds'
+import type { BESCategory } from '@/lib/data/bes-funds'
 
 export function DevletKatkisi() {
   const [contribution, setContribution] = useState('50000')
   const [years, setYears] = useState('5')
+  const [category, setCategory] = useState<BESCategory>('mixed')
 
   const totalContribution = parseFloat(contribution) || 0
   const governmentMatch = totalContribution * 0.30
   const totalWithMatch = totalContribution + governmentMatch
+  const numYears = parseInt(years) || 5
 
-  // Simulated scenarios
-  const scenarios = calculateScenarios(totalWithMatch, parseInt(years) || 5)
+  const scenarios = calculateScenarios(totalWithMatch, numYears, category)
+
+  // Find best/worst for dynamic verdict
+  const usdValues = scenarios.map(s => s.valueUSD)
+  const bestUSD = Math.max(...usdValues)
+  const besScenario = scenarios[0]
+  const besIsBest = besScenario.valueUSD === bestUSD
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
@@ -23,7 +32,7 @@ export function DevletKatkisi() {
       </p>
 
       {/* Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">
             Toplam Katkınız (₺)
@@ -47,6 +56,20 @@ export function DevletKatkisi() {
             min="1"
             max="20"
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-600 mb-1">
+            Fon Kategorisi
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as BESCategory)}
+            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-700 bg-white"
+          >
+            {Object.entries(BES_CATEGORY_RETURNS).map(([key, val]) => (
+              <option key={key} value={key}>{val.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -104,14 +127,22 @@ export function DevletKatkisi() {
       </div>
 
       {/* Verdict */}
-      <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-amber-800 font-semibold">
-          💡 Sonuç: Devlet katkısı (%30 bonus) bile TL&apos;nin değer kaybını telafi edemiyor.
+      <div className={`mt-6 p-4 border rounded-lg ${besIsBest ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+        <p className={`font-semibold ${besIsBest ? 'text-emerald-800' : 'text-amber-800'}`}>
+          {besIsBest
+            ? `✓ Sonuç: Seçtiğiniz ${BES_CATEGORY_RETURNS[category].label} kategorisi ile devlet katkısı avantajı gerçek bir kazanç sağlıyor.`
+            : `💡 Sonuç: Devlet katkısı (%30 bonus) bile seçtiğiniz ${BES_CATEGORY_RETURNS[category].label} kategorisi ile TL'nin değer kaybını telafi edemiyor.`}
         </p>
-        <p className="text-amber-700 text-sm mt-1">
-          Aynı parayı USD olarak tutsaydınız, devlet katkısı olmadan bile daha iyi durumda olabilirdiniz.
+        <p className={`text-sm mt-1 ${besIsBest ? 'text-emerald-700' : 'text-amber-700'}`}>
+          {besIsBest
+            ? 'Bu fon kategorisinde BES, alternatif yatırımlara göre daha iyi performans gösteriyor.'
+            : 'Aynı parayı USD veya altın olarak tutsaydınız, devlet katkısı olmadan bile daha iyi durumda olabilirdiniz.'}
         </p>
       </div>
+
+      <p className="mt-4 text-xs text-slate-400 italic">
+        Getiriler kategori bazlı tahminidir, gerçek fon performansı farklı olabilir.
+      </p>
     </div>
   )
 }
@@ -124,44 +155,63 @@ interface Scenario {
   verdict: 'winner' | 'loser' | 'neutral'
 }
 
-function calculateScenarios(totalWithMatch: number, years: number): Scenario[] {
-  // Assumptions based on typical Turkish market conditions
-  const tlDepreciation = Math.pow(0.75, years) // TL loses ~25% per year vs USD
-  const besReturn = Math.pow(1.15, years) // BES funds return ~15% TL annually
-  const usdRate2024 = 34 // Current rate
-  const futureUsdRate = usdRate2024 / tlDepreciation
+function calculateScenarios(totalWithMatch: number, years: number, category: BESCategory): Scenario[] {
+  const usdRate = 34
+  const annualDepreciation = TL_ANNUAL_DEPRECIATION_VS_USD
+  const futureUsdRate = usdRate / Math.pow(1 - annualDepreciation, years)
 
-  const besValueTL = totalWithMatch * besReturn
+  // BES: ana fon with selected category, devlet katkısı with 'standart'
+  const personalContribution = totalWithMatch / 1.3
+  const govContribution = personalContribution * 0.30
+
+  const anaFonReturn = BES_CATEGORY_RETURNS[category].annualTL
+  const dkFonReturn = BES_CATEGORY_RETURNS['standart'].annualTL
+
+  const anaFonValueTL = personalContribution * Math.pow(1 + anaFonReturn, years)
+  const dkFonValueTL = govContribution * Math.pow(1 + dkFonReturn, years)
+  const besValueTL = anaFonValueTL + dkFonValueTL
   const besValueUSD = besValueTL / futureUsdRate
 
-  const justUsdValueTL = totalWithMatch * tlDepreciation * (futureUsdRate / usdRate2024) * (1 / tlDepreciation)
-  const justUsdValueUSD = totalWithMatch / usdRate2024
+  // Just holding USD (no government match, only personal)
+  const justUsdValueUSD = personalContribution / usdRate
+  const justUsdValueTL = justUsdValueUSD * futureUsdRate
 
-  const goldReturn = Math.pow(1.08, years) // Gold ~8% USD annually
-  const goldValueUSD = (totalWithMatch / usdRate2024) * goldReturn
+  // Gold (no government match, only personal)
+  const goldReturnUSD = Math.pow(1.08, years)
+  const goldValueUSD = (personalContribution / usdRate) * goldReturnUSD
   const goldValueTL = goldValueUSD * futureUsdRate
+
+  const allUSD = [besValueUSD, justUsdValueUSD, goldValueUSD]
+  const maxUSD = Math.max(...allUSD)
+  const minUSD = Math.min(...allUSD)
+
+  function getVerdict(usd: number): 'winner' | 'loser' | 'neutral' {
+    if (usd === maxUSD) return 'winner'
+    if (usd === minUSD) return 'loser'
+    return 'neutral'
+  }
 
   return [
     {
       name: 'BES + Devlet Katkısı',
-      description: 'Mevcut durumunuz',
+      description: `${BES_CATEGORY_RETURNS[category].label} + DK: Standart`,
       valueTL: Math.round(besValueTL),
       valueUSD: Math.round(besValueUSD),
-      verdict: 'loser',
+      verdict: getVerdict(besValueUSD),
     },
     {
       name: 'Sadece USD Tutmak',
       description: 'Devlet katkısı yok',
-      valueTL: Math.round(totalWithMatch / 1.3 * (futureUsdRate / usdRate2024)),
-      valueUSD: Math.round(totalWithMatch / 1.3 / usdRate2024),
-      verdict: 'neutral',
+      valueTL: Math.round(justUsdValueTL),
+      valueUSD: Math.round(justUsdValueUSD),
+      verdict: getVerdict(justUsdValueUSD),
     },
     {
       name: 'Altın Almak',
-      description: 'Devlet katkısı yok',
-      valueTL: Math.round(goldValueTL / 1.3),
-      valueUSD: Math.round(goldValueUSD / 1.3),
-      verdict: 'winner',
+      description: 'Devlet katkısı yok, ~%8 USD/yıl',
+      valueTL: Math.round(goldValueTL),
+      valueUSD: Math.round(goldValueUSD),
+      verdict: getVerdict(goldValueUSD),
     },
   ]
 }

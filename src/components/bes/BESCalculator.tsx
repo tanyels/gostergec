@@ -1,43 +1,79 @@
 'use client'
 
 import { useState } from 'react'
-import { BES_FUNDS, BES_PROVIDERS } from '@/lib/data/bes-funds'
+import {
+  BES_PROVIDERS,
+  BES_CATEGORY_RETURNS,
+  getRegularFunds,
+  getDevletKatkisiFunds,
+  getEstimatedReturn,
+  getEstimatedUSDReturn,
+} from '@/lib/data/bes-funds'
 
 export function BESCalculator() {
   const [provider, setProvider] = useState('')
-  const [fund, setFund] = useState('')
+  const [anaFon, setAnaFon] = useState('')
+  const [devletFon, setDevletFon] = useState('')
   const [monthlyAmount, setMonthlyAmount] = useState('1000')
   const [startDate, setStartDate] = useState('2020-01')
   const [results, setResults] = useState<CalculationResults | null>(null)
 
-  const availableFunds = provider
-    ? BES_FUNDS.filter(f => f.provider === provider)
-    : []
+  const regularFunds = provider ? getRegularFunds(provider) : []
+  const dkFunds = provider ? getDevletKatkisiFunds(provider) : []
+
+  const selectedAnaFon = regularFunds.find(f => f.code === anaFon)
+  const selectedDevletFon = dkFunds.find(f => f.code === devletFon)
 
   function handleCalculate() {
-    // Simulated calculation - in production, fetch from database
+    if (!selectedAnaFon || !selectedDevletFon) return
+
     const months = getMonthsDifference(startDate)
     const totalContribution = parseFloat(monthlyAmount) * months
-    const governmentMatch = totalContribution * 0.30 // 30% devlet katkısı
+    const governmentMatch = totalContribution * 0.30
 
-    // Simulated fund performance
-    const nominalReturn = 0.65 // 65% TL return
-    const usdReturn = -0.15 // -15% USD return
+    const anaFonReturnTL = getEstimatedReturn(selectedAnaFon.category, months)
+    const anaFonReturnUSD = getEstimatedUSDReturn(selectedAnaFon.category, months)
+    const devletFonReturnTL = getEstimatedReturn(selectedDevletFon.category, months)
+    const devletFonReturnUSD = getEstimatedUSDReturn(selectedDevletFon.category, months)
 
-    const currentValueTL = (totalContribution + governmentMatch) * (1 + nominalReturn)
-    const currentValueUSD = (totalContribution + governmentMatch) * (1 + usdReturn)
+    const anaFonValueTL = totalContribution * (1 + anaFonReturnTL)
+    const anaFonValueUSD = totalContribution * (1 + anaFonReturnUSD)
+    const devletFonValueTL = governmentMatch * (1 + devletFonReturnTL)
+    const devletFonValueUSD = governmentMatch * (1 + devletFonReturnUSD)
+
+    const totalValueTL = anaFonValueTL + devletFonValueTL
+    const totalValueUSD = anaFonValueUSD + devletFonValueUSD
+    const totalInvested = totalContribution + governmentMatch
 
     setResults({
       totalContribution,
       governmentMatch,
-      totalInvested: totalContribution + governmentMatch,
-      currentValueTL,
-      nominalReturnPercent: nominalReturn * 100,
-      usdReturnPercent: usdReturn * 100,
-      realLossTL: currentValueTL - currentValueUSD,
+      totalInvested,
       months,
+      anaFon: {
+        label: selectedAnaFon.name,
+        category: BES_CATEGORY_RETURNS[selectedAnaFon.category].label,
+        valueTL: anaFonValueTL,
+        valueUSD: anaFonValueUSD,
+        returnTL: anaFonReturnTL * 100,
+        returnUSD: anaFonReturnUSD * 100,
+      },
+      devletFon: {
+        label: selectedDevletFon.name,
+        category: BES_CATEGORY_RETURNS[selectedDevletFon.category].label,
+        valueTL: devletFonValueTL,
+        valueUSD: devletFonValueUSD,
+        returnTL: devletFonReturnTL * 100,
+        returnUSD: devletFonReturnUSD * 100,
+      },
+      totalValueTL,
+      totalValueUSD,
+      totalReturnTL: ((totalValueTL / totalInvested) - 1) * 100,
+      totalReturnUSD: ((totalValueUSD / totalInvested) - 1) * 100,
     })
   }
+
+  const canCalculate = !!selectedAnaFon && !!selectedDevletFon && parseFloat(monthlyAmount) > 0
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
@@ -51,31 +87,15 @@ export function BESCalculator() {
             value={provider}
             onChange={(e) => {
               setProvider(e.target.value)
-              setFund('')
+              setAnaFon('')
+              setDevletFon('')
+              setResults(null)
             }}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-700 bg-white"
           >
             <option value="">Seçin...</option>
             {BES_PROVIDERS.map((p) => (
               <option key={p.code} value={p.code}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Fund Selection */}
-        <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">
-            Fon / Fund
-          </label>
-          <select
-            value={fund}
-            onChange={(e) => setFund(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-700 bg-white"
-            disabled={!provider}
-          >
-            <option value="">Seçin...</option>
-            {availableFunds.map((f) => (
-              <option key={f.code} value={f.code}>{f.name}</option>
             ))}
           </select>
         </div>
@@ -108,9 +128,62 @@ export function BESCalculator() {
         </div>
       </div>
 
+      {/* Dual Fund Selection */}
+      {provider && (
+        <div className="border-2 border-blue-200 rounded-xl p-5 mb-6 bg-blue-50/30">
+          <p className="text-sm text-blue-700 mb-4">
+            BES sisteminde kişisel katkılarınız &quot;Ana Fon&quot;a, devletin %30 katkısı ise ayrı bir &quot;Devlet Katkısı Fonu&quot;na yatırılır.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Ana Fon */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Ana Fon (Kişisel Katkı)
+              </label>
+              <select
+                value={anaFon}
+                onChange={(e) => setAnaFon(e.target.value)}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-700 bg-white"
+              >
+                <option value="">Seçin...</option>
+                {regularFunds.map((f) => (
+                  <option key={f.code} value={f.code}>
+                    {f.name} ({BES_CATEGORY_RETURNS[f.category].label})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Devlet Katkısı Fonu */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Devlet Katkısı Fonu
+              </label>
+              <select
+                value={devletFon}
+                onChange={(e) => setDevletFon(e.target.value)}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-700 bg-white"
+              >
+                <option value="">Seçin...</option>
+                {dkFunds.map((f) => (
+                  <option key={f.code} value={f.code}>
+                    {f.name} ({BES_CATEGORY_RETURNS[f.category].label})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={handleCalculate}
-        className="w-full md:w-auto bg-slate-800 text-white py-2 px-6 rounded-lg hover:bg-slate-700 transition font-semibold"
+        disabled={!canCalculate}
+        className={`w-full md:w-auto py-2 px-6 rounded-lg transition font-semibold ${
+          canCalculate
+            ? 'bg-slate-800 text-white hover:bg-slate-700'
+            : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+        }`}
       >
         Hesapla / Calculate
       </button>
@@ -134,32 +207,113 @@ export function BESCalculator() {
             <ResultCard
               label="TL Getiri"
               sublabel="Nominal return"
-              value={`+${results.nominalReturnPercent.toFixed(1)}%`}
-              highlight="green"
+              value={`${results.totalReturnTL >= 0 ? '+' : ''}${results.totalReturnTL.toFixed(1)}%`}
+              highlight={results.totalReturnTL >= 0 ? 'green' : 'red'}
             />
             <ResultCard
               label="USD Getiri"
               sublabel="Real return"
-              value={`${results.usdReturnPercent.toFixed(1)}%`}
-              highlight="red"
+              value={`${results.totalReturnUSD >= 0 ? '+' : ''}${results.totalReturnUSD.toFixed(1)}%`}
+              highlight={results.totalReturnUSD >= 0 ? 'green' : 'red'}
             />
           </div>
 
+          {/* Dual Fund Breakdown Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-slate-600">Havuz</th>
+                  <th className="text-right px-4 py-3 text-sm font-semibold text-slate-600">Yatırılan</th>
+                  <th className="text-right px-4 py-3 text-sm font-semibold text-slate-600">TL Değer</th>
+                  <th className="text-right px-4 py-3 text-sm font-semibold text-slate-600">TL Getiri</th>
+                  <th className="text-right px-4 py-3 text-sm font-semibold text-slate-600">USD Getiri</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-slate-100">
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-slate-800">Ana Fon</p>
+                    <p className="text-xs text-slate-500">{results.anaFon.label} — {results.anaFon.category}</p>
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-700">₺{results.totalContribution.toLocaleString('tr-TR')}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-slate-700">₺{Math.round(results.anaFon.valueTL).toLocaleString('tr-TR')}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={results.anaFon.returnTL >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
+                      {results.anaFon.returnTL >= 0 ? '+' : ''}{results.anaFon.returnTL.toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={results.anaFon.returnUSD >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
+                      {results.anaFon.returnUSD >= 0 ? '+' : ''}{results.anaFon.returnUSD.toFixed(1)}%
+                    </span>
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-slate-800">Devlet Katkısı</p>
+                    <p className="text-xs text-slate-500">{results.devletFon.label} — {results.devletFon.category}</p>
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-700">₺{results.governmentMatch.toLocaleString('tr-TR')}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-slate-700">₺{Math.round(results.devletFon.valueTL).toLocaleString('tr-TR')}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={results.devletFon.returnTL >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
+                      {results.devletFon.returnTL >= 0 ? '+' : ''}{results.devletFon.returnTL.toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={results.devletFon.returnUSD >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
+                      {results.devletFon.returnUSD >= 0 ? '+' : ''}{results.devletFon.returnUSD.toFixed(1)}%
+                    </span>
+                  </td>
+                </tr>
+                <tr className="bg-slate-50 font-bold">
+                  <td className="px-4 py-3 text-slate-800">Toplam</td>
+                  <td className="px-4 py-3 text-right text-slate-800">₺{results.totalInvested.toLocaleString('tr-TR')}</td>
+                  <td className="px-4 py-3 text-right text-slate-800">₺{Math.round(results.totalValueTL).toLocaleString('tr-TR')}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={results.totalReturnTL >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                      {results.totalReturnTL >= 0 ? '+' : ''}{results.totalReturnTL.toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={results.totalReturnUSD >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                      {results.totalReturnUSD >= 0 ? '+' : ''}{results.totalReturnUSD.toFixed(1)}%
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           {/* Reality Check */}
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h4 className="font-bold text-red-800 mb-2">Gerçek Durum / Reality Check</h4>
-            <p className="text-red-700">
+          <div className={`${results.totalReturnUSD >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4`}>
+            <h4 className={`font-bold mb-2 ${results.totalReturnUSD >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+              Gerçek Durum / Reality Check
+            </h4>
+            <p className={results.totalReturnUSD >= 0 ? 'text-emerald-700' : 'text-red-700'}>
               {results.months} ayda toplam <strong>₺{results.totalInvested.toLocaleString('tr-TR')}</strong> yatırdınız
               (₺{results.governmentMatch.toLocaleString('tr-TR')} devlet katkısı dahil).
             </p>
-            <p className="text-red-700 mt-2">
-              TL bazında <span className="text-green-600 font-semibold">+{results.nominalReturnPercent.toFixed(1)}%</span> kazandınız,
-              ama USD bazında <span className="text-red-600 font-semibold">{results.usdReturnPercent.toFixed(1)}%</span> kaybettiniz.
+            <p className={`mt-2 ${results.totalReturnUSD >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+              TL bazında <span className={`font-semibold ${results.totalReturnTL >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {results.totalReturnTL >= 0 ? '+' : ''}{results.totalReturnTL.toFixed(1)}%
+              </span> {results.totalReturnTL >= 0 ? 'kazandınız' : 'kaybettiniz'},
+              USD bazında <span className={`font-semibold ${results.totalReturnUSD >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {results.totalReturnUSD >= 0 ? '+' : ''}{results.totalReturnUSD.toFixed(1)}%
+              </span> {results.totalReturnUSD >= 0 ? 'kazandınız' : 'kaybettiniz'}.
             </p>
-            <p className="text-red-800 font-semibold mt-2">
-              Devlet katkısı bile gerçek kaybınızı telafi edemedi.
+            <p className={`font-semibold mt-2 ${results.totalReturnUSD >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+              {results.totalReturnUSD >= 0
+                ? 'Seçtiğiniz fon kategorisi TL değer kaybını telafi edebildi.'
+                : 'Devlet katkısı bile gerçek kaybınızı telafi edemedi.'}
             </p>
           </div>
+
+          {/* Disclaimer */}
+          <p className="text-xs text-slate-400 italic">
+            Getiriler kategori bazlı tahminidir, gerçek fon performansı farklı olabilir. Yatırım tavsiyesi değildir.
+          </p>
         </div>
       )}
     </div>
@@ -204,13 +358,24 @@ function getMonthsDifference(startDate: string): number {
   return (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
 }
 
+interface FundResult {
+  label: string
+  category: string
+  valueTL: number
+  valueUSD: number
+  returnTL: number
+  returnUSD: number
+}
+
 interface CalculationResults {
   totalContribution: number
   governmentMatch: number
   totalInvested: number
-  currentValueTL: number
-  nominalReturnPercent: number
-  usdReturnPercent: number
-  realLossTL: number
   months: number
+  anaFon: FundResult
+  devletFon: FundResult
+  totalValueTL: number
+  totalValueUSD: number
+  totalReturnTL: number
+  totalReturnUSD: number
 }
