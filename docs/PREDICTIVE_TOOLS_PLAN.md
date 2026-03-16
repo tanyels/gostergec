@@ -424,6 +424,22 @@ V5 — BIST YABANCI TAKAS ORANI (güven modifikatörü):
   Ayrı sinyal DEĞİL — flow sinyalinin confidence'ını modifiye eder.
   Sadece Hisse kategorisine uygulanır.
   Kaynak: BIST günlük bülteni.
+
+V6 — XHARZ/XU100 "FOMO BAROMETRESİ" (güven modifikatörü):
+  BIST Halka Arz Endeksi / BIST100 rasyosu → sürünün duygusal nabzı.
+  XHARZ_RS = XHARZ_getiri / XU100_getiri (30 gün kayan)
+    XHARZ_RS sert aşağı (z<-2) → Hisse flow güveni %50 kırpılır
+    XHARZ_RS ↑ VE yabancı takas ↓ → KRİTİK: boğa tuzağı → güven %30
+  Noise: SIFIR — tamamen gerçek fiyat verisi.
+  Kaynak: BIST günlük verileri.
+
+V6 — GOOGLE TRENDS "SOKAK BAROMETRESİ" (güven modifikatörü):
+  Spesifik kelimeler (noise minimize):
+    "halka arz nasıl alınır" → FOMO tepe (Hisse)
+    "altın alınır mı"       → korku paniği (Altın öncü)
+    "fon getirileri"        → mevduattan çıkış (genel giriş)
+  SADECE z>3 eşikte devreye girer — düşük z'ler tamamen görmezden gelinir.
+  Kaynak: Google Trends API (pytrends), gece pipeline.
 ```
 
 ## UI Tasarımı
@@ -575,12 +591,14 @@ HMM EĞİTİMİ:
   • 5 yıllık geçmiş veri ile eğitilir
   • Gizli durum sayısı: 3 (4'ten düşürüldü — daha az veri ile daha güvenilir)
   • Gözlem vektörü: [usdtry_ret, bist_ret, gold_ret, vol_30d, rate_level, cds_5y,
-                      brent_ret, gpr_zscore]
+                      brent_ret, gpr_zscore, dth_change_z]
     ↑ CDS 5Y — Türkiye risk algısının en iyi öncü göstergesi
     ↑ V5 Brent Petrol — enerji ithalatçısı etkisi (Yahoo Finance BZ=F)
     ↑ V5 GPR Endeksi — jeopolitik risk (matteoiacoviello.com, aylık, Z-score)
+    ↑ V6 TCMB DTH İvmesi — dövize kaçış sinyali (TCMB EVDS, haftalık Perşembe)
+      DTH z>2 VE BIST yukarı → "boğa tuzağı" uyarısı, 🟠 tetikler
     Yeni sinyal kaynağı DEĞİL — HMM gözlem boyutunu zenginleştirir.
-    Sinyal sayısı artmaz, rejim tespiti hassaslaşır.
+    Sinyal sayısı artmaz, rejim tespiti hassaslaşır. (8→9 boyut)
   • OVERFİTTİNG KORUMASI: CDS ve volatilite kriz anında birbirine çok benzer
     sinyal verir. Tüm gözlem değişkenleri Z-score normalize edildikten sonra
     HMM'e verilir — modelin iki veriyi "tek değişken" gibi algılamasını önler.
@@ -598,9 +616,9 @@ HMM EĞİTİMİ:
 
   V4 — KATEGORİ BAZLI HMM (ileri faz):
     Her kategori için ayrı gözlem vektörü:
-      Hisse → [BIST_ret, CDS, vol_30d, rate_level, brent_ret, gpr_z]
-      Altın → [ONS_ret, USD_ret, CDS, vol_30d, brent_ret]
-      Döviz → [USD_ret, EUR_ret, CDS, rate_level, brent_ret]
+      Hisse → [BIST_ret, CDS, vol_30d, rate_level, brent_ret, gpr_z, dth_z]
+      Altın → [ONS_ret, USD_ret, CDS, vol_30d, brent_ret, dth_z]
+      Döviz → [USD_ret, EUR_ret, CDS, rate_level, brent_ret, dth_z]
     Faz 3'te tek HMM ile başla, Faz 5+ sonrası kategori bazlı ayrıştır.
 
 ÇIKTILAR:
@@ -1092,7 +1110,7 @@ src/
 ## V4 — Gece Pipeline + Veri Kalitesi
 
 **Gece Pipeline (23:59 TR / 20:59 UTC):**
-- CDS 5Y, VIX, DXY, Brent Petrol, GPR akşam güncellemesi
+- CDS 5Y, VIX, DXY, Brent, GPR, Google Trends, TCMB DTH (Perşembe)
 - Ertesi gün için ön rejim hesaplama
 - Ana sinyal üretimi YAPMAZ, sadece makro veri günceller
 - Ayrı GitHub Actions workflow: `night-pipeline.yml`
@@ -1103,9 +1121,11 @@ src/
 - Tek sinyal ağırlığı > %40 → ALARM (tek kaynağa aşırı bağımlılık)
 - Bildirim: Telegram bot veya email (opsiyonel)
 
-**Yeni Python dosyaları (V4/V5):**
-- `collectors/global_macro.py` — VIX + DXY + Brent + GPR
+**Yeni Python dosyaları (V4/V5/V6):**
+- `collectors/global_macro.py` — VIX + DXY + Brent + GPR + Google Trends
 - `collectors/bist_foreign.py` — BIST yabancı takas oranı (günlük)
+- `collectors/bist_xharz.py` — V6: XHARZ/XU100 halka arz endeksi (günlük)
+- `collectors/tcmb_dth.py` — V6: TCMB DTH verisi (haftalık, Perşembe)
 - `collectors/holidays.py` — Türkiye tatil takvimi + is_market_open()
 - `quality/health_check.py` — Null oranı, CDS kontrolü, ağırlık dengesi
 - `quality/alerting.py` — Telegram/email bildirim

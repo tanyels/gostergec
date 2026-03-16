@@ -280,6 +280,7 @@ GitHub Actions (09:30 UTC, Türkiye saat 12:30)
          │   ├── fetch_prices.py      → fund_prices
          │   ├── fetch_snapshots.py   → fund_snapshots
          │   ├── fetch_bist_foreign.py → BIST yabancı takas oranı
+         │   ├── fetch_bist_xharz.py   → V6: XHARZ halka arz endeksi
          │   ├── fetch_cds.py         → cds_5y (Yahoo Finance / banka bülteni)
          │   └── fetch_news.py        → news_items
          │
@@ -303,7 +304,8 @@ GitHub Actions (09:30 UTC, Türkiye saat 12:30)
 V4 — GECE YARISI PİPELINE (23:59 TR / 20:59 UTC):
     └── pipeline.py --night
          ├── fetch_cds.py            → CDS 5Y akşam güncellemesi
-         ├── fetch_global_macro.py   → VIX + DXY + Brent Petrol + GPR
+         ├── fetch_global_macro.py   → VIX + DXY + Brent + GPR + Google Trends
+         ├── fetch_tcmb_dth.py      → V6: TCMB DTH (Perşembe günleri güncellenir)
          └── pre_calculate_regime()  → ertesi gün için ön rejim hesaplama
          NOT: Ana sinyal üretimi YAPMAZ, sadece makro veri günceller.
               12:30 pipeline'ı bu verileri kullanarak sinyal üretir.
@@ -508,10 +510,40 @@ from datetime import datetime, date
 #     Sadece Hisse kategorisine uygulanır (diğer kategorilerde etkisiz).
 #     Kaynak: BIST günlük bülteni, günlük collector ile toplanır.
 #
+#   V6 — XHARZ/XU100 "FOMO BAROMETRESİ" (güven modifikatörü):
+#     BIST Halka Arz Endeksi (XHARZ) / BIST100 (XU100) rasyosu.
+#     Sürünün "duygusal nabzı" — halka arzlar uçuyorsa sürü coşku içinde,
+#     halka arzlar ilk gün eksiye düşüyorsa sürünün nefesi kesilmiş.
+#     Hesaplama: XHARZ_RS = XHARZ_getiri / XU100_getiri (30 gün kayan)
+#     Entegrasyon:
+#       XHARZ_RS sert aşağı kırılma (z<-2) → Hisse flow güveni %50 kırpılır
+#       XHARZ_RS ↑ VE yabancı takas ↓ → KRİTİK UYARI: "sürü coşkuda ama
+#         akıllı para çıkıyor, boğa tuzağı riski" → güven %30'a düşer
+#     Ayrı sinyal DEĞİL — flow güven modifikatörü.
+#     Kaynak: BIST günlük verileri (XHARZ endeksi).
+#     Noise: SIFIR — tamamen gerçek fiyat verisi.
+#
+#   V6 — GOOGLE TRENDS "SOKAK BAROMETRESİ" (güven modifikatörü):
+#     Sürünün bilgi arama davranışı — spesifik kelimelerle noise minimize:
+#       "halka arz nasıl alınır" → FOMO tepe sinyali (Hisse)
+#       "altın alınır mı"       → korku/enflasyon paniği (Altın öncü)
+#       "fon getirileri"        → mevduattan TEFAS'a uyanma (genel giriş)
+#     Hesaplama: Google Trends API, son 7 gün, Z-score normalize
+#     Entegrasyon (SADECE z>3 eşikte — düşük z'ler görmezden gelinir):
+#       "halka arz nasıl alınır" z>3 → Hisse momentum'u 1-2 hafta daha sürer
+#         AMA flow güveninde "yakında sert düzeltme" uyarısı eklenir
+#       "altın alınır mı" z>3 → Altın kategorisi sürü sinyalini güçlendirir
+#       "fon getirileri" z>3 → genel giriş dalgası, tüm kategorilerde not
+#     Ayrı sinyal DEĞİL — metadata notu + güven modifikatörü.
+#     Kaynak: Google Trends API (pytrends), gece pipeline.
+#     Noise kontrolü: z<3 ise tamamen görmezden gelinir (gürültü filtresi).
+#
 #   Çıktı:  7 sinyal (kategori) + ~500 sinyal (fon)
 #   Hedef:  target_type='category' ve target_type='fund'
 #   Meta:   {flow_proxy: 1200000, z_score_10d: 3.2, z_score_30d: 1.8, investor_delta: 340,
-#            foreign_ratio: 0.23, foreign_trend: 'increasing', ...}
+#            foreign_ratio: 0.23, foreign_trend: 'increasing',
+#            xharz_rs: 1.15, xharz_trend: 'rising',
+#            gtrends_fomo_z: 3.4, gtrends_fear_z: 1.2, ...}
 #
 # regime.py:
 #   Girdi:  exchange_rates (son 5 yıl) + fund_prices (proxy BIST) + CDS 5Y verisi
@@ -522,7 +554,7 @@ from datetime import datetime, date
 #           en iyi öncü göstergesi. Kaynak: Yahoo Finance (^TURKISHCDS5Y) veya
 #           banka günlük bültenleri (Akbank/İş Yatırım), günlük EOD.
 #           Gözlem: [usdtry_ret, bist_ret, gold_ret, vol_30d, rate_level, cds_5y,
-#                    brent_ret, gpr_zscore]
+#                    brent_ret, gpr_zscore, dth_change_z]
 #           V5 — Brent Petrol: Türkiye enerji ithalatçısı, petrol ↑ → cari açık ↑,
 #                 enflasyon ↑. Hisse/tahvil negatif, altın/döviz pozitif.
 #                 Kaynak: Yahoo Finance (BZ=F), gece pipeline'dan güncellenir.
@@ -530,8 +562,17 @@ from datetime import datetime, date
 #                 GPR ↑ → kriz rejimini erkenden tetikler (güvenli liman sinyali).
 #                 Z-score normalize (aylık güncelleme, günlük interpolasyon).
 #                 Kaynak: matteoiacoviello.com/gpr.htm
+#           V6 — TCMB DTH İVMESİ (Döviz Tevdiat Hesabı):
+#                 Türk toplumunun nihai güvenli limanı = dolar. DTH'a para akışı
+#                 sürünün borsadan/fonlardan usulca çıktığını gösterir.
+#                 TCMB her Perşembe 14:30'da yayınlar (Yurtiçi Yerleşikler DTH).
+#                 Haftalık net değişim, parite etkisinden arındırılmış.
+#                 Z-score normalize, haftalık güncelleme (Perşembe→Cuma pipeline).
+#                 Entegrasyon: DTH z-score spike (z>2) VE BIST hala yukarıysa
+#                   → "boğa tuzağı" uyarısı, Yüksek Volatilite (🟠) tetikler.
+#                 Kaynak: TCMB EVDS API (evds2.tcmb.gov.tr)
 #           NOT: Yeni sinyal kaynağı DEĞİL — mevcut HMM'in gözlem boyutunu zenginleştirir.
-#                Sinyal sayısı artmaz, rejim tespiti hassaslaşır.
+#                Sinyal sayısı artmaz, rejim tespiti hassaslaşır. (8→9 boyut)
 #
 #   HMM OVERFİTTİNG KORUMASI:
 #     CDS ve volatilite kriz anında birbirine çok benzer sinyal verir.
@@ -549,9 +590,9 @@ from datetime import datetime, date
 #
 #   V4 — KATEGORİ BAZLI HMM (ileri faz):
 #     Her kategori için ayrı gözlem vektörü:
-#       Hisse → [BIST_ret, CDS, vol_30d, rate_level, brent_ret, gpr_z]
-#       Altın → [ONS_ret, USD_ret, CDS, vol_30d, brent_ret]
-#       Döviz → [USD_ret, EUR_ret, CDS, rate_level, brent_ret]
+#       Hisse → [BIST_ret, CDS, vol_30d, rate_level, brent_ret, gpr_z, dth_z]
+#       Altın → [ONS_ret, USD_ret, CDS, vol_30d, brent_ret, dth_z]
+#       Döviz → [USD_ret, EUR_ret, CDS, rate_level, brent_ret, dth_z]
 #     Faz 3'te tek HMM ile başla, Faz 5+ sonrası kategori bazlı ayrıştır.
 #   Çıktı:  7 sinyal (kategori × rejim back-test getirisi)
 #   Hedef:  target_type='category'
@@ -633,8 +674,10 @@ scripts/
 │   ├── prices.py                  ← TEFAS fon fiyatları (mevcut scraper.py refactor)
 │   ├── snapshots.py               ← Günlük piyasa değeri + yatırımcı sayısı
 │   ├── cds.py                     ← CDS 5Y (Yahoo Finance / banka bültenleri)
-│   ├── global_macro.py            ← V4/V5: VIX + DXY + Brent + GPR (gece pipeline)
+│   ├── global_macro.py            ← V4/V5/V6: VIX + DXY + Brent + GPR + Trends (gece)
 │   ├── bist_foreign.py            ← V5: BIST yabancı takas oranı (günlük)
+│   ├── bist_xharz.py              ← V6: XHARZ/XU100 halka arz endeksi (günlük)
+│   ├── tcmb_dth.py                ← V6: TCMB DTH verisi (haftalık, Perşembe)
 │   ├── holidays.py                ← V4: Türkiye tatil takvimi + is_market_open()
 │   └── news.py                    ← KAP/Bloomberg HT/TCMB haber toplama
 │
@@ -1462,7 +1505,9 @@ Bu yaklaşımın avantajları:
 | Tatil/yarım gün yanlış sinyal | Düşük hacimde sahte momentum | is_market_open() + hacim kontrolü (%10 eşik) → momentum dondurma |
 | Rejim flip-flop | Güvensiz rejim sinyalleri | HMM histerezis: 5 gün minimum kalma şartı |
 | Tek sinyal baskınlığı | Ensemble dengesizliği | Veri kalitesi raporu: tek sinyal > %40 ağırlık → alarm |
-| VIX/DXY/Brent/GPR eksikliği | Makro katman eksik kalır | Gece pipeline (23:59 TR) global makro güncelleme, graceful degradation |
+| VIX/DXY/Brent/GPR/DTH eksikliği | Makro katman eksik kalır | Gece pipeline (23:59 TR) global makro güncelleme, graceful degradation |
+| Google Trends API limit/noise | Yanlış FOMO sinyali | z<3 filtre (sadece uç değerler), rate limit koruması, eksikse görmezden gel |
+| XHARZ endeksi hesaplanmıyor | Halka arz FOMO tespiti eksik | BIST verisinden otomatik hesaplama, eksikse flow güven modifikatörü devre dışı |
 
 ## Veri retention politikası
 

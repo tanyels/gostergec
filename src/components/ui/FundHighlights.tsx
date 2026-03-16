@@ -7,15 +7,27 @@ import { useTefasFilter } from '@/lib/context/TefasFilterContext'
 interface FundSummary {
   code: string
   name: string
-  tryReturn: number
-  usdReturn: number
-  period: string
+  isTefas: boolean
+  returns: Record<string, { tryReturn: number; usdReturn: number }>
 }
 
 const PLACEHOLDER_DATA: FundSummary[] = [
-  { code: 'TYH', name: 'Yapı Kredi Altın Fonu', tryReturn: 145, usdReturn: 32, period: '1Y' },
-  { code: 'IPB', name: 'İş Portföy BIST Banka', tryReturn: 210, usdReturn: 28, period: '1Y' },
-  { code: 'MAC', name: 'Ak Portföy Amerikan', tryReturn: 180, usdReturn: 24, period: '1Y' },
+  {
+    code: 'TYH', name: 'Yapı Kredi Altın Fonu', isTefas: true,
+    returns: { '1Y': { tryReturn: 145, usdReturn: 32 }, '3Y': { tryReturn: 420, usdReturn: 85 }, '5Y': { tryReturn: 900, usdReturn: 110 }, '10Y': { tryReturn: 2100, usdReturn: 180 } },
+  },
+  {
+    code: 'IPB', name: 'İş Portföy BIST Banka', isTefas: true,
+    returns: { '1Y': { tryReturn: 210, usdReturn: 28 }, '3Y': { tryReturn: 580, usdReturn: 45 }, '5Y': { tryReturn: 1200, usdReturn: -5 }, '10Y': { tryReturn: 3500, usdReturn: 60 } },
+  },
+  {
+    code: 'MAC', name: 'Ak Portföy Amerikan', isTefas: true,
+    returns: { '1Y': { tryReturn: 180, usdReturn: 24 }, '3Y': { tryReturn: 310, usdReturn: 72 }, '5Y': { tryReturn: 650, usdReturn: 95 }, '10Y': { tryReturn: 1800, usdReturn: 220 } },
+  },
+  {
+    code: 'OKS', name: 'Odeabank Karma Özel', isTefas: false,
+    returns: { '1Y': { tryReturn: 190, usdReturn: 35 }, '3Y': { tryReturn: 490, usdReturn: 90 }, '5Y': { tryReturn: 800, usdReturn: 120 }, '10Y': { tryReturn: 2500, usdReturn: 200 } },
+  },
 ]
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -29,6 +41,15 @@ export function FundHighlights() {
   const [period, setPeriod] = useState<'1Y' | '3Y' | '5Y' | '10Y'>('1Y')
   const [returnType, setReturnType] = useState<'try' | 'usd'>('usd')
   const { showOnlyTefas, setShowOnlyTefas } = useTefasFilter()
+
+  const getReturn = (fund: FundSummary) => {
+    const r = fund.returns[period]
+    return returnType === 'usd' ? r.usdReturn : r.tryReturn
+  }
+
+  const displayFunds = PLACEHOLDER_DATA
+    .filter((f) => !showOnlyTefas || f.isTefas)
+    .sort((a, b) => getReturn(b) - getReturn(a))
 
   return (
     <div>
@@ -95,28 +116,32 @@ export function FundHighlights() {
           </div>
 
           <div className="space-y-3">
-            {PLACEHOLDER_DATA.map((fund, i) => (
-              <div
-                key={fund.code}
-                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"
-              >
-                <div className="flex items-center space-x-3">
-                  <span className="text-lg font-bold text-slate-400">#{i + 1}</span>
-                  <div>
-                    <p className="font-semibold text-slate-800">{fund.name}</p>
-                    <p className="text-sm text-slate-500">{fund.code}</p>
+            {displayFunds.map((fund, i) => {
+              const ret = getReturn(fund)
+              const isPositive = ret >= 0
+              return (
+                <div
+                  key={fund.code}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg font-bold text-slate-400">#{i + 1}</span>
+                    <div>
+                      <p className="font-semibold text-slate-800">{fund.name}</p>
+                      <p className="text-sm text-slate-500">{fund.code}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-bold text-lg ${isPositive ? 'text-profit' : 'text-loss'}`}>
+                      {isPositive ? '+' : ''}{ret}%
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium">
+                      {returnType === 'usd' ? 'USD' : 'TL'}
+                    </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-profit font-bold text-lg">
-                    +{returnType === 'usd' ? fund.usdReturn : fund.tryReturn}%
-                  </p>
-                  <p className="text-xs text-slate-500 font-medium">
-                    {returnType === 'usd' ? 'USD' : 'TL'}
-                  </p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <Link
