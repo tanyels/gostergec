@@ -1,0 +1,35 @@
+services:
+  fonako:
+    build:
+      context: ..
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: "https://lenjxstmgwcqmbpjjfoa.supabase.co"
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxlbmp4c3RtZ3djcW1icGpqZm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNDEwODgsImV4cCI6MjA4NTcxNzA4OH0.Rulyt5QNqqUzBT6sez8p9ctRtwqdSNUBwfXJDHR4MFs"
+    restart: unless-stopped
+    mem_limit: 512m
+    expose:
+      - "3000"
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-conf:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+    depends_on:
+      - fonako
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-conf:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  certbot-conf:
+  certbot-www:
