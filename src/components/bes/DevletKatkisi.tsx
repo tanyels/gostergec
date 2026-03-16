@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { BES_CATEGORY_RETURNS, TL_ANNUAL_DEPRECIATION_VS_USD } from '@/lib/data/bes-funds'
 import type { BESCategory } from '@/lib/data/bes-funds'
+import { FALLBACK_USD_TRY } from '@/lib/constants'
 
 export function DevletKatkisi() {
   const [contribution, setContribution] = useState('50000')
@@ -156,7 +157,7 @@ interface Scenario {
 }
 
 function calculateScenarios(totalWithMatch: number, years: number, category: BESCategory): Scenario[] {
-  const usdRate = 34
+  const usdRate = FALLBACK_USD_TRY
   const annualDepreciation = TL_ANNUAL_DEPRECIATION_VS_USD
   const futureUsdRate = usdRate / Math.pow(1 - annualDepreciation, years)
 

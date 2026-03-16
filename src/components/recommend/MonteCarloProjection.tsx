@@ -12,9 +12,10 @@ import {
   Legend,
 } from 'recharts'
 import { runMonteCarlo } from '@/lib/recommend/montecarlo'
-import { useFundLookup } from '@/lib/recommend/types'
+import { useFundLookup } from '@/hooks/useFunds'
 import type { MonteCarloOutput } from '@/lib/recommend/types'
 import { getFundPrices } from '@/lib/api/supabase'
+import { getLocalDateString } from '@/lib/utils/date'
 import { TefasToggle } from '@/components/ui/TefasToggle'
 
 function formatCurrency(val: number): string {
@@ -48,8 +49,10 @@ export function MonteCarloProjection() {
     setError('')
 
     try {
-      const endDate = new Date().toISOString().split('T')[0]
-      const startDate = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const endDate = getLocalDateString()
+      const fiveYearsAgo = new Date()
+      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5)
+      const startDate = getLocalDateString(fiveYearsAgo)
 
       const prices = await getFundPrices(selectedFund, startDate, endDate)
 

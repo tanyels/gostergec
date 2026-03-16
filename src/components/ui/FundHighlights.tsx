@@ -11,6 +11,7 @@ interface FundSummary {
   returns: Record<string, { tryReturn: number; usdReturn: number }>
 }
 
+// TODO: Replace with real data from Supabase fund_returns table
 const PLACEHOLDER_DATA: FundSummary[] = [
   {
     code: 'TYH', name: 'Yapı Kredi Altın Fonu', isTefas: true,

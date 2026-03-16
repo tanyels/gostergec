@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { FUNDS } from '@/lib/data/funds'
 import { calculateRealReturns, type RealReturns } from '@/lib/utils/calculations'
+import { getLocalDateString } from '@/lib/utils/date'
+import { FALLBACK_USD_TRY, FALLBACK_GOLD_TRY_GRAM } from '@/lib/constants'
 import { useTefasFilter } from '@/lib/context/TefasFilterContext'
 import { TefasToggle } from '@/components/ui/TefasToggle'
 
@@ -62,12 +64,12 @@ function deriveExtended(
   const endValueUsd =
     results.endValueUsd != null
       ? results.endValueUsd
-      : (1 + results.tryReturn / 100) * amount / 36
+      : (1 + results.tryReturn / 100) * amount / FALLBACK_USD_TRY
 
   // Approximations using fallback exchange rates when not directly available
-  const startValueUsd = amount / 32
-  const startValueGold = amount / 2500
-  const endValueGold = (1 + results.tryReturn / 100) * amount / 3200
+  const startValueUsd = amount / FALLBACK_USD_TRY
+  const startValueGold = amount / FALLBACK_GOLD_TRY_GRAM
+  const endValueGold = (1 + results.tryReturn / 100) * amount / FALLBACK_GOLD_TRY_GRAM
 
   return { startValueUsd, endValueUsd, startValueGold, endValueGold }
 }
@@ -566,7 +568,7 @@ export function HeroVisual() {
     async function findLoserFund() {
       const oneYearAgo = new Date()
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-      const startDate = oneYearAgo.toISOString().split('T')[0]
+      const startDate = getLocalDateString(oneYearAgo)
 
       for (const code of LOSERS) {
         try {
@@ -650,10 +652,10 @@ export function HeroVisual() {
   const ext = results
     ? deriveExtended(results, amount)
     : {
-        startValueUsd: amount / 32,
-        endValueUsd: (1 + 0.67) * amount / 36,
-        startValueGold: amount / 2500,
-        endValueGold: (1 + 0.67) * amount / 3200,
+        startValueUsd: amount / FALLBACK_USD_TRY,
+        endValueUsd: (1 + 0.67) * amount / FALLBACK_USD_TRY,
+        startValueGold: amount / FALLBACK_GOLD_TRY_GRAM,
+        endValueGold: (1 + 0.67) * amount / FALLBACK_GOLD_TRY_GRAM,
       }
 
   const fundInfo = filteredFunds.find((f) => f.code === selectedFund) ?? FUNDS.find((f) => f.code === selectedFund)

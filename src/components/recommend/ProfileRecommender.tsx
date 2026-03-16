@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { SURVEY_QUESTIONS, matchFundsToProfile, type SurveyAnswers } from '@/lib/recommend/profiles'
 import type { ProfileResult } from '@/lib/recommend/types'
 import { getCachedFundDetails } from '@/lib/api/fundDetailsCache'
@@ -30,12 +30,20 @@ export function ProfileRecommender() {
   const [loading, setLoading] = useState(false)
   const [showResult, setShowResult] = useState(false)
 
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isComplete = Object.keys(answers).length === 5
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   const handleAnswer = (key: string, value: 1 | 2 | 3) => {
     setAnswers((prev) => ({ ...prev, [key]: value }))
     if (step < SURVEY_QUESTIONS.length - 1) {
-      setTimeout(() => setStep(step + 1), 300)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setStep((s) => s + 1), 300)
     }
   }
 

@@ -67,13 +67,25 @@ export async function getExchangeRates(
 }
 
 export async function getAllFunds(): Promise<Fund[]> {
-  const { data, error } = await supabase
-    .from('funds')
-    .select('*')
-    .order('name', { ascending: true })
+  const all: Fund[] = []
+  const batchSize = 1000
+  let from = 0
 
-  if (error) throw error
-  return data || []
+  while (true) {
+    const { data, error } = await supabase
+      .from('funds')
+      .select('*')
+      .order('name', { ascending: true })
+      .range(from, from + batchSize - 1)
+
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < batchSize) break
+    from += batchSize
+  }
+
+  return all
 }
 
 // ── Fund Returns ──
@@ -100,12 +112,24 @@ export async function getFundReturns(period: string): Promise<FundReturn[]> {
 }
 
 export async function getAllFundReturns(): Promise<FundReturn[]> {
-  const { data, error } = await supabase
-    .from('fund_returns')
-    .select('*')
+  const all: FundReturn[] = []
+  const batchSize = 1000
+  let from = 0
 
-  if (error) throw error
-  return data || []
+  while (true) {
+    const { data, error } = await supabase
+      .from('fund_returns')
+      .select('*')
+      .range(from, from + batchSize - 1)
+
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < batchSize) break
+    from += batchSize
+  }
+
+  return all
 }
 
 // ── Fund Details with Asset Allocation ──

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { scoreFunds } from '@/lib/recommend/scoring'
-import { useFundBatchLookup } from '@/lib/recommend/types'
+import { useFundBatchLookup } from '@/hooks/useFunds'
 import type { RiskLevel, Currency, ScoredFund } from '@/lib/recommend/types'
 import { getAllFundReturns } from '@/lib/api/supabase'
 import { getCachedFundDetails } from '@/lib/api/fundDetailsCache'

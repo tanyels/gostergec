@@ -28,18 +28,22 @@ export function BESCalculator() {
     if (!selectedAnaFon || !selectedDevletFon) return
 
     const months = getMonthsDifference(startDate)
-    const totalContribution = parseFloat(monthlyAmount) * months
+    const monthly = parseFloat(monthlyAmount)
+    const totalContribution = monthly * months
     const governmentMatch = totalContribution * 0.30
+    const monthlyGovMatch = monthly * 0.30
 
-    const anaFonReturnTL = getEstimatedReturn(selectedAnaFon.category, months)
-    const anaFonReturnUSD = getEstimatedUSDReturn(selectedAnaFon.category, months)
-    const devletFonReturnTL = getEstimatedReturn(selectedDevletFon.category, months)
-    const devletFonReturnUSD = getEstimatedUSDReturn(selectedDevletFon.category, months)
+    // Use Future Value of Annuity: FV = PMT * ((1+r)^n - 1) / r
+    // This correctly models monthly contributions instead of lump-sum
+    const anaFonValueTL = futureValueOfAnnuity(monthly, selectedAnaFon.category, months, 'TL')
+    const anaFonValueUSD = futureValueOfAnnuity(monthly, selectedAnaFon.category, months, 'USD')
+    const devletFonValueTL = futureValueOfAnnuity(monthlyGovMatch, selectedDevletFon.category, months, 'TL')
+    const devletFonValueUSD = futureValueOfAnnuity(monthlyGovMatch, selectedDevletFon.category, months, 'USD')
 
-    const anaFonValueTL = totalContribution * (1 + anaFonReturnTL)
-    const anaFonValueUSD = totalContribution * (1 + anaFonReturnUSD)
-    const devletFonValueTL = governmentMatch * (1 + devletFonReturnTL)
-    const devletFonValueUSD = governmentMatch * (1 + devletFonReturnUSD)
+    const anaFonReturnTL = totalContribution > 0 ? (anaFonValueTL / totalContribution - 1) : 0
+    const anaFonReturnUSD = totalContribution > 0 ? (anaFonValueUSD / totalContribution - 1) : 0
+    const devletFonReturnTL = governmentMatch > 0 ? (devletFonValueTL / governmentMatch - 1) : 0
+    const devletFonReturnUSD = governmentMatch > 0 ? (devletFonValueUSD / governmentMatch - 1) : 0
 
     const totalValueTL = anaFonValueTL + devletFonValueTL
     const totalValueUSD = anaFonValueUSD + devletFonValueUSD
@@ -356,6 +360,23 @@ function getMonthsDifference(startDate: string): number {
   const start = new Date(startDate + '-01')
   const now = new Date()
   return (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
+}
+
+function futureValueOfAnnuity(
+  monthlyPayment: number,
+  category: Parameters<typeof getEstimatedReturn>[0],
+  months: number,
+  type: 'TL' | 'USD'
+): number {
+  const annualReturn = type === 'TL'
+    ? getEstimatedReturn(category, 12)
+    : getEstimatedUSDReturn(category, 12)
+  const monthlyRate = Math.pow(1 + annualReturn, 1 / 12) - 1
+
+  if (Math.abs(monthlyRate) < 1e-10) {
+    return monthlyPayment * months
+  }
+  return monthlyPayment * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
 }
 
 interface FundResult {

@@ -8,13 +8,16 @@ let cacheTime = 0
 let inflight: Promise<Map<string, FundDetail>> | null = null
 
 async function fetchAndCache(): Promise<Map<string, FundDetail>> {
-  const rows = await getAllFundDetailsWithAllocation()
-  const map = new Map<string, FundDetail>()
-  rows.forEach((r) => map.set(r.fund_code, r))
-  cache = map
-  cacheTime = Date.now()
-  inflight = null
-  return map
+  try {
+    const rows = await getAllFundDetailsWithAllocation()
+    const map = new Map<string, FundDetail>()
+    rows.forEach((r) => map.set(r.fund_code, r))
+    cache = map
+    cacheTime = Date.now()
+    return map
+  } finally {
+    inflight = null
+  }
 }
 
 export async function getCachedFundDetails(): Promise<Map<string, FundDetail>> {

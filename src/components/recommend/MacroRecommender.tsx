@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { calculateMacroScores, FACTOR_LABELS, DIRECTION_LABELS } from '@/lib/recommend/macroRules'
-import type { MacroDirection, MacroCategoryScore } from '@/lib/recommend/types'
-import { useFundBatchLookup, type FundReturn } from '@/lib/recommend/types'
+import type { MacroDirection, MacroCategoryScore, FundReturn } from '@/lib/recommend/types'
+import { useFundBatchLookup } from '@/hooks/useFunds'
 import { getFundReturns } from '@/lib/api/supabase'
 import { TefasToggle } from '@/components/ui/TefasToggle'
 

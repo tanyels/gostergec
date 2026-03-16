@@ -1,4 +1,5 @@
 import { getFundPrices, getExchangeRates } from '@/lib/api/supabase'
+import { getLocalDateString } from '@/lib/utils/date'
 
 export interface RealReturns {
   tryReturn: number      // Nominal TL return (%)
@@ -23,7 +24,7 @@ interface CalculateParams {
  */
 export async function calculateRealReturns(params: CalculateParams): Promise<RealReturns> {
   const { fundCode, startDate, amountTry } = params
-  const endDate = params.endDate || new Date().toISOString().split('T')[0]
+  const endDate = params.endDate || getLocalDateString()
 
   try {
     // Fetch fund prices and exchange rates in parallel
@@ -78,16 +79,9 @@ export async function calculateRealReturns(params: CalculateParams): Promise<Rea
     }
   } catch (error) {
     console.error('Calculation failed:', error)
-    // Return placeholder data for development
-    return {
-      tryReturn: 85.4,
-      usdReturn: -12.3,
-      eurReturn: -8.7,
-      goldReturn: -18.2,
-      startValue: amountTry,
-      endValueTry: amountTry * 1.854,
-      endValueUsd: amountTry * 0.877 / 34,
-    }
+    throw error instanceof Error
+      ? error
+      : new Error('Veri çekilemedi. Lütfen daha sonra tekrar deneyin.')
   }
 }
 
