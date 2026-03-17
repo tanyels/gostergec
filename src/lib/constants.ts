@@ -11,9 +11,22 @@ export const INFLATION_CACHE_TTL = 60 * 60 * 1000 // 1 hour
 export const FALLBACK_TR_INFLATION = 44.4
 export const FALLBACK_US_INFLATION = 2.8
 
+// Nitelikli yatırımcı / kapalı fon detection — "ÖZEL FON" or "ÖZEL FONU" in name
+export function isQualifiedFund(name: string): boolean {
+  const upper = name.toUpperCase()
+  return upper.includes('ÖZEL FON')
+}
+
 // BES fund detection — checks category first, falls back to name
+// Excludes qualified investor funds (ÖZEL FON) even if category is Emeklilik
 export function isBESFund(name: string, category?: string): boolean {
+  if (isQualifiedFund(name)) return false
   if (category === 'Emeklilik') return true
   const upper = name.toUpperCase()
   return upper.includes('EMEKLİLİK') || upper.includes('EMEKLILIK')
+}
+
+// Halka açık TEFAS fonu — ne BES ne de nitelikli yatırımcı
+export function isPublicTEFASFund(name: string, category?: string): boolean {
+  return !isBESFund(name, category) && !isQualifiedFund(name)
 }

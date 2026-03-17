@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useFundBatchLookup } from '@/lib/hooks/useFundLookup'
 import { supabase, getInflationForPeriod } from '@/lib/api/supabase'
-import { isBESFund } from '@/lib/constants'
+import { isBESFund, isQualifiedFund, isPublicTEFASFund } from '@/lib/constants'
 
 type SortCol = 'try' | 'usd' | 'gold'
 type SortDir = 'desc' | 'asc'
@@ -49,9 +49,9 @@ interface FundFilter {
 
 const FUND_FILTERS: FundFilter[] = [
   { key: 'all', label: 'Tüm Fonlar', group: 'type' },
-  { key: 'public', label: 'Halka Açık Fonlar', group: 'type' },
-  { key: 'qualified', label: 'Nitelikli Yatırımcı (Özel)', group: 'type' },
+  { key: 'public', label: 'Halka Açık TEFAS', group: 'type' },
   { key: 'bes', label: 'BES Fonları', group: 'type' },
+  { key: 'qualified', label: 'Nitelikli Yatırımcı & Kapalı', group: 'type' },
   { key: 'cat:Hisse', label: 'Hisse Senedi', group: 'category' },
   { key: 'cat:Altın', label: 'Altın', group: 'category' },
   { key: 'cat:Döviz', label: 'Döviz', group: 'category' },
@@ -209,8 +209,8 @@ export function TopFundsTable() {
   const filtered = data.filter((f) => {
     if (fundFilter === 'all') return true
     if (fundFilter === 'bes') return isBESFund(f.name, f.category)
-    if (fundFilter === 'public') return !f.name.includes('ÖZEL FON')
-    if (fundFilter === 'qualified') return f.name.includes('ÖZEL FON')
+    if (fundFilter === 'public') return isPublicTEFASFund(f.name, f.category)
+    if (fundFilter === 'qualified') return isQualifiedFund(f.name)
     if (fundFilter.startsWith('cat:')) return f.category === fundFilter.slice(4)
     return true
   })
