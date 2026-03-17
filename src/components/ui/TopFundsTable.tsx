@@ -36,30 +36,31 @@ const PERIODS: { key: PeriodKey; label: string; months: number }[] = [
   { key: '10Y', label: '10 yıl', months: 120 },
 ]
 
-// Fund filter options
-type FundFilterKey = 'all' | 'public' | 'qualified' | 'bes'
-  | 'cat:Hisse' | 'cat:Altın' | 'cat:Döviz' | 'cat:Tahvil'
-  | 'cat:Katılım' | 'cat:Para Piyasası' | 'cat:Değişken' | 'cat:Fon Sepeti'
+// Fund type toggle filters (multi-select)
+type FundTypeKey = 'public' | 'bes' | 'qualified'
 
-interface FundFilter {
-  key: FundFilterKey
+interface FundTypeFilter {
+  key: FundTypeKey
   label: string
-  group: 'type' | 'category'
 }
 
-const FUND_FILTERS: FundFilter[] = [
-  { key: 'all', label: 'Tüm Fonlar', group: 'type' },
-  { key: 'public', label: 'Halka Açık TEFAS', group: 'type' },
-  { key: 'bes', label: 'BES Fonları', group: 'type' },
-  { key: 'qualified', label: 'Nitelikli Yatırımcı & Kapalı', group: 'type' },
-  { key: 'cat:Hisse', label: 'Hisse Senedi', group: 'category' },
-  { key: 'cat:Altın', label: 'Altın', group: 'category' },
-  { key: 'cat:Döviz', label: 'Döviz', group: 'category' },
-  { key: 'cat:Tahvil', label: 'Tahvil / Borçlanma', group: 'category' },
-  { key: 'cat:Katılım', label: 'Katılım', group: 'category' },
-  { key: 'cat:Para Piyasası', label: 'Para Piyasası', group: 'category' },
-  { key: 'cat:Değişken', label: 'Değişken', group: 'category' },
-  { key: 'cat:Fon Sepeti', label: 'Fon Sepeti', group: 'category' },
+const FUND_TYPE_FILTERS: FundTypeFilter[] = [
+  { key: 'public', label: 'Halka Açık TEFAS' },
+  { key: 'bes', label: 'BES' },
+  { key: 'qualified', label: 'Nitelikli & Kapalı' },
+]
+
+// Category filters (single-select dropdown)
+const CATEGORY_FILTERS: { key: string; label: string }[] = [
+  { key: 'all', label: 'Tüm Kategoriler' },
+  { key: 'Hisse', label: 'Hisse Senedi' },
+  { key: 'Altın', label: 'Altın' },
+  { key: 'Döviz', label: 'Döviz' },
+  { key: 'Tahvil', label: 'Tahvil / Borçlanma' },
+  { key: 'Katılım', label: 'Katılım' },
+  { key: 'Para Piyasası', label: 'Para Piyasası' },
+  { key: 'Değişken', label: 'Değişken' },
+  { key: 'Fon Sepeti', label: 'Fon Sepeti' },
 ]
 
 interface RawReturn {
@@ -91,11 +92,12 @@ export function TopFundsTable() {
   const [benchmark, setBenchmark] = useState<BenchmarkKey>('nominal')
   const [period, setPeriod] = useState<PeriodKey>('1Y')
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [fundFilter, setFundFilter] = useState<FundFilterKey>('all')
+  const [catFilterOpen, setCatFilterOpen] = useState(false)
+  const [activeTypes, setActiveTypes] = useState<Set<FundTypeKey>>(new Set())
+  const [categoryFilter, setCategoryFilter] = useState('all')
   const [inflationRate, setInflationRate] = useState<number | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const filterRef = useRef<HTMLDivElement>(null)
+  const catFilterRef = useRef<HTMLDivElement>(null)
 
   const currentBenchmark = BENCHMARKS.find((b) => b.key === benchmark)!
   const currentPeriod = PERIODS.find((p) => p.key === period)!
@@ -167,8 +169,8 @@ export function TopFundsTable() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false)
       }
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setFilterOpen(false)
+      if (catFilterRef.current && !catFilterRef.current.contains(e.target as Node)) {
+        setCatFilterOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -206,12 +208,31 @@ export function TopFundsTable() {
     return `Yıllık %${b.fallbackRate}`
   }
 
+  function toggleType(key: FundTypeKey) {
+    setActiveTypes((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
   const filtered = data.filter((f) => {
-    if (fundFilter === 'all') return true
-    if (fundFilter === 'bes') return isBESFund(f.name, f.category)
-    if (fundFilter === 'public') return isPublicTEFASFund(f.name, f.category)
-    if (fundFilter === 'qualified') return isQualifiedFund(f.name)
-    if (fundFilter.startsWith('cat:')) return f.category === fundFilter.slice(4)
+    // Type filter (multi-select, OR logic; empty = all)
+    if (activeTypes.size > 0) {
+      let matchesType = false
+      activeTypes.forEach((t) => {
+        if (t === 'bes' && isBESFund(f.name, f.category)) matchesType = true
+        if (t === 'public' && isPublicTEFASFund(f.name, f.category)) matchesType = true
+        if (t === 'qualified' && isQualifiedFund(f.name)) matchesType = true
+      })
+      if (!matchesType) return false
+    }
+    // Category filter
+    if (categoryFilter !== 'all' && f.category !== categoryFilter) return false
     return true
   })
 
@@ -303,46 +324,53 @@ export function TopFundsTable() {
         ))}
       </div>
 
-      {/* Fund type filter */}
-      <div className="relative inline-block mb-3" ref={filterRef}>
-        <button
-          onClick={() => setFilterOpen(!filterOpen)}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-inset hover:bg-surface-raised text-body text-xs font-medium transition border border-border-default"
-          aria-label="Fon türü filtresi"
-          aria-expanded={filterOpen}
-        >
-          {FUND_FILTERS.find((f) => f.key === fundFilter)!.label}
-          <svg className={`w-3 h-3 transition-transform ${filterOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {filterOpen && (
-          <div className="absolute left-0 top-full mt-1 bg-surface border border-border-default rounded-lg shadow-lg z-20 min-w-[200px] max-h-[320px] overflow-y-auto">
-            {/* Type filters */}
-            <div className="px-2.5 pt-2 pb-1 text-[10px] font-semibold text-subtle uppercase tracking-wide">Fon Türü</div>
-            {FUND_FILTERS.filter((f) => f.group === 'type').map((f) => (
-              <button
-                key={f.key}
-                onClick={() => { setFundFilter(f.key); setFilterOpen(false) }}
-                className={`w-full text-left px-3 py-1.5 hover:bg-surface-inset transition text-sm ${fundFilter === f.key ? 'bg-surface-raised font-semibold text-heading' : 'text-body'}`}
-              >
-                {f.label}
-              </button>
-            ))}
-            {/* Category filters */}
-            <div className="border-t border-border-default mt-1" />
-            <div className="px-2.5 pt-2 pb-1 text-[10px] font-semibold text-subtle uppercase tracking-wide">Kategori</div>
-            {FUND_FILTERS.filter((f) => f.group === 'category').map((f) => (
-              <button
-                key={f.key}
-                onClick={() => { setFundFilter(f.key); setFilterOpen(false) }}
-                className={`w-full text-left px-3 py-1.5 hover:bg-surface-inset transition text-sm last:rounded-b-lg ${fundFilter === f.key ? 'bg-surface-raised font-semibold text-heading' : 'text-body'}`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        )}
+      {/* Fund type toggle pills (multi-select) */}
+      <div className="flex flex-wrap items-center gap-1 mb-2">
+        {FUND_TYPE_FILTERS.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => toggleType(f.key)}
+            className={`px-2 py-0.5 text-[11px] font-medium rounded-full transition border ${
+              activeTypes.has(f.key)
+                ? 'bg-heading text-surface border-heading'
+                : 'bg-surface-inset text-body border-border-default hover:bg-surface-raised'
+            }`}
+            aria-pressed={activeTypes.has(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+        {/* Category dropdown */}
+        <div className="relative inline-block" ref={catFilterRef}>
+          <button
+            onClick={() => setCatFilterOpen(!catFilterOpen)}
+            className={`inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-medium rounded-full transition border ${
+              categoryFilter !== 'all'
+                ? 'bg-heading text-surface border-heading'
+                : 'bg-surface-inset text-body border-border-default hover:bg-surface-raised'
+            }`}
+            aria-label="Kategori filtresi"
+            aria-expanded={catFilterOpen}
+          >
+            {categoryFilter === 'all' ? 'Kategori' : CATEGORY_FILTERS.find((c) => c.key === categoryFilter)?.label}
+            <svg className={`w-2.5 h-2.5 transition-transform ${catFilterOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {catFilterOpen && (
+            <div className="absolute left-0 top-full mt-1 bg-surface border border-border-default rounded-lg shadow-lg z-20 min-w-[160px] max-h-[280px] overflow-y-auto">
+              {CATEGORY_FILTERS.map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => { setCategoryFilter(c.key); setCatFilterOpen(false) }}
+                  className={`w-full text-left px-3 py-1.5 hover:bg-surface-inset transition text-xs first:rounded-t-lg last:rounded-b-lg ${categoryFilter === c.key ? 'bg-surface-raised font-semibold text-heading' : 'text-body'}`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Effective rate indicator */}
