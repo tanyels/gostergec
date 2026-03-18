@@ -20,10 +20,10 @@ interface Benchmark {
 
 const BENCHMARKS: Benchmark[] = [
   { key: 'nominal', label: 'Ham Getiri', fallbackRate: 0, currency: 'try' },
-  { key: 'tuik', label: 'TÜİK TL', fallbackRate: 44.4, currency: 'try' },
-  { key: 'enag', label: 'ENAG TL', fallbackRate: 72.0, currency: 'try' },
-  { key: 'fed', label: 'FED/BEA USD', fallbackRate: 2.8, currency: 'usd' },
-  { key: 'konut', label: 'TCMB Konut', fallbackRate: 32.0, currency: 'try' },
+  { key: 'tuik', label: 'TÜİK Enflasyonuna Göre Reel', fallbackRate: 44.4, currency: 'try' },
+  { key: 'enag', label: 'ENAG Enflasyonuna Göre Reel', fallbackRate: 72.0, currency: 'try' },
+  { key: 'fed', label: 'ABD Doları Enflasyonuna Göre Reel', fallbackRate: 2.8, currency: 'usd' },
+  { key: 'konut', label: 'Konut Fiyatlarına Göre Reel', fallbackRate: 32.0, currency: 'try' },
 ]
 
 const PERIODS: { key: PeriodKey; label: string; months: number }[] = [
@@ -201,11 +201,17 @@ export function TopFundsTable() {
 
   // Build description string for dropdown
   function getBenchmarkDescription(b: Benchmark): string {
-    if (b.key === 'nominal') return 'Enflasyon düzeltmesiz ham getiri'
-    if (inflationRate !== null && b.key === benchmark) {
-      return `${currentPeriod.label} toplam %${inflationRate.toFixed(1)}`
+    if (b.key === 'nominal') return 'Enflasyon hesaba katılmaz, TL bazlı ham kazanç'
+    const descriptions: Record<string, string> = {
+      tuik: 'Resmi TÜİK enflasyonu düşüldükten sonraki kazanç',
+      enag: 'Bağımsız ENAG enflasyonu düşüldükten sonraki kazanç',
+      fed: 'ABD dolar enflasyonu düşüldükten sonraki kazanç',
+      konut: 'TCMB konut fiyat artışı düşüldükten sonraki kazanç',
     }
-    return `Yıllık %${b.fallbackRate}`
+    const rate = inflationRate !== null && b.key === benchmark
+      ? ` (son ${currentPeriod.label}: %${inflationRate.toFixed(1)})`
+      : ''
+    return (descriptions[b.key] || '') + rate
   }
 
   function toggleType(key: FundTypeKey) {
@@ -286,7 +292,7 @@ export function TopFundsTable() {
             </svg>
           </button>
           {dropdownOpen && (
-            <div className="absolute left-0 top-full mt-1 bg-surface border border-border-default rounded-lg shadow-lg z-20 min-w-[180px]">
+            <div className="absolute left-0 top-full mt-1 bg-surface border border-border-default rounded-lg shadow-lg z-20 min-w-[320px]">
               {BENCHMARKS.map((b) => (
                 <button
                   key={b.key}

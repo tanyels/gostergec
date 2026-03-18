@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { IllusionBarChart } from './IllusionBarChart'
-import { TopFundsTable } from './TopFundsTable'
 import { FUND_CATEGORIES } from '@/lib/data/fund-types'
 import { useFundLookup } from '@/lib/hooks/useFundLookup'
 import { FundSearch } from './FundSearch'
@@ -210,11 +209,9 @@ export function HeroVisual() {
         ))}
       </div>
 
-      {/* Two column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* LEFT: Search & Analysis (2/3 width) */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Search & Analysis */}
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div className="space-y-6">
           {/* Fund selector */}
           <div>
             <FundSearch
@@ -281,12 +278,6 @@ export function HeroVisual() {
             </div>
           )}
         </div>
-
-        {/* RIGHT: Top Funds Leaderboard (1/3 width) */}
-        <div className="bg-surface border border-border-default rounded-xl p-5 shadow-sm">
-          <TopFundsTable />
-        </div>
-
       </div>
     </section>
   )

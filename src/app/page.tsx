@@ -3,6 +3,7 @@ import { LiveTicker } from '@/components/ui/LiveTicker'
 import { StatsBar } from '@/components/ui/StatsBar'
 import { DataFreshness } from '@/components/ui/DataFreshness'
 import { HeroVisual } from '@/components/ui/HeroVisual'
+import { TopFundsTable } from '@/components/ui/TopFundsTable'
 import { CategoryGuide } from '@/components/ui/CategoryGuide'
 import { FundHighlights } from '@/components/ui/FundHighlights'
 import { HowItWorks } from '@/components/ui/HowItWorks'
@@ -10,6 +11,11 @@ import { HowItWorks } from '@/components/ui/HowItWorks'
 export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-10">
+      {/* Top Funds Leaderboard — full width, first thing on page */}
+      <section className="bg-surface border border-border-default rounded-xl p-6 shadow-sm">
+        <TopFundsTable />
+      </section>
+
       <LiveTicker />
 
       {/* Above-the-fold CTA */}
